@@ -6,6 +6,15 @@
 !/.gitignore
 !/laporan-guru/
 !/pendataan-guru-yspi/
+!/kewajiban/
+# kewajiban: hanya kode. Isi pesan, nominal, nama penerima, alamat rahasia
+# kalender, dan ID grup tetap lokal.
+kewajiban/hasil/
+kewajiban/tambahan.json
+kewajiban/kalender.txt
+kewajiban/kalender-state.json
+kewajiban/lokal.json
+*.bak-*
 # keuangan-web sengaja TIDAK ikut: kodenya memuat angka & keputusan keuangan
 
 # Data, log, sandi, dan sesi tidak pernah ikut ke GitHub
