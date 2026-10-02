@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Formulir Pendataan Guru — Yayasan Suluh Prana Indonesia</title>
+<meta name="description" content="Formulir pendataan guru Yayasan Suluh Prana Indonesia. Mohon diisi dengan lengkap dan jujur.">
+<meta name="theme-color" content="#c4202a">
+<link rel="icon" href="assets/logo-mark.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="css/gaya.css">
+</head>
+<body>
+
+<header class="kepala">
+  <div class="isi">
+    <img src="assets/logo-yspi.png" alt="Yayasan Suluh Prana Indonesia" width="1200" height="625">
+    <div class="label">Sistem Pendataan Guru</div>
+  </div>
+</header>
+<div class="pita"></div>
+
+<section class="hero">
+  <div class="isi">
+    <h1>Formulir Pendataan Guru</h1>
+    <p>Mohon diisi dengan lengkap dan jujur. Data yang Anda kirim hanya dapat dilihat oleh pengurus yayasan.</p>
+  </div>
+</section>
+
+<main>
+  <div id="pesan" class="pesan" role="status" aria-live="polite"></div>
+
+  <div class="kartu" id="kartuForm">
+    <div class="catatan">
+      Kolom bertanda <span class="wajib">*</span> wajib diisi. Formulir ini dapat diisi langsung dari HP.
+      Isian Anda tersimpan otomatis di perangkat ini, jadi aman bila halaman tertutup di tengah jalan
+      <span style="opacity:.75">(kecuali foto — foto perlu dipilih ulang)</span>.
+    </div>
+
+    <form id="formGuru" novalidate>
+
+      <div class="bagian">
+        <h2><span class="langkah">1</span>Foto Guru</h2>
+        <p class="petunjuk">Gunakan foto formal terbaru. Foto dari kamera HP otomatis diperkecil agar cepat terkirim.</p>
+        <div class="foto">
+          <div class="pratinjau" id="pratinjau">Belum ada foto</div>
+          <div style="flex:1">
+            <label for="foto">Unggah Foto <span class="wajib">*</span></label>
+            <input id="foto" name="foto" type="file" accept="image/jpeg,image/png,image/webp,image/*" required>
+            <p class="petunjuk rata" id="infoFoto">Format JPG, PNG, atau WEBP.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bagian">
+        <h2><span class="langkah">2</span>Data Pribadi</h2>
+        <div class="kisi">
+          <div><label for="i-nama">Nama Lengkap <span class="wajib">*</span></label>
+            <input id="i-nama" name="nama" required autocomplete="name" minlength="2" maxlength="120"></div>
+          <div><label for="i-jk">Jenis Kelamin <span class="wajib">*</span></label>
+            <select id="i-jk" name="jenis_kelamin" required>
+              <option value="">— Pilih —</option><option>Laki-laki</option><option>Perempuan</option>
+            </select></div>
+          <div><label for="i-tempat">Tempat Lahir <span class="wajib">*</span></label>
+            <input id="i-tempat" name="tempat_lahir" required maxlength="80"></div>
+          <div><label for="i-tgl">Tanggal Lahir <span class="wajib">*</span></label>
+            <input id="i-tgl" name="tanggal_lahir" type="date" required></div>
+          <div class="penuh"><label for="i-alamat">Alamat Rumah / Surat <span class="wajib">*</span></label>
+            <textarea id="i-alamat" name="alamat" required maxlength="400" autocomplete="street-address"></textarea></div>
+          <div><label for="i-rt">RT</label><input id="i-rt" name="rt" inputmode="numeric" maxlength="10"></div>
+          <div><label for="i-rw">RW</label><input id="i-rw" name="rw" inputmode="numeric" maxlength="10"></div>
+          <div><label for="i-dusun">Dusun</label><input id="i-dusun" name="dusun" maxlength="80"></div>
+          <div><label for="i-desa">Desa / Kelurahan</label><input id="i-desa" name="desa" maxlength="80"></div>
+          <div><label for="i-kec">Kecamatan</label><input id="i-kec" name="kecamatan" maxlength="80"></div>
+          <div><label for="i-kab">Kabupaten / Kota</label><input id="i-kab" name="kabupaten" maxlength="80"></div>
+          <div class="penuh"><label for="i-prov">Provinsi</label><input id="i-prov" name="provinsi" maxlength="80"></div>
+          <div><label for="i-tr">Telepon Rumah</label><input id="i-tr" name="telepon_rumah" type="tel" inputmode="tel" maxlength="40"></div>
+          <div><label for="i-ts">Telepon Sekolah</label><input id="i-ts" name="telepon_sekolah" type="tel" inputmode="tel" maxlength="40"></div>
+          <div><label for="i-hp">Nomor HP / WhatsApp <span class="wajib">*</span></label>
+            <input id="i-hp" name="telepon_hp" type="tel" inputmode="tel" required placeholder="08xxxxxxxxxx" minlength="5" maxlength="40" autocomplete="tel"></div>
+          <div><label for="i-tl">Kontak Lainnya</label><input id="i-tl" name="telepon_lainnya" type="tel" maxlength="40"></div>
+        </div>
+      </div>
+
+      <div class="bagian">
+        <h2><span class="langkah">3</span>Pendidikan</h2>
+        <div class="kisi">
+          <div><label for="i-pend">Pendidikan Terakhir</label><input id="i-pend" name="pendidikan" placeholder="Contoh: S1" maxlength="80"></div>
+          <div><label for="i-jur">Jurusan</label><input id="i-jur" name="jurusan" maxlength="120"></div>
+          <div><label for="i-univ">Universitas / Sekolah</label><input id="i-univ" name="universitas" maxlength="150"></div>
+          <div><label for="i-lulus">Tahun Kelulusan</label><input id="i-lulus" name="tahun_lulus" inputmode="numeric" maxlength="12" placeholder="Contoh: 2003"></div>
+          <div class="penuh"><label for="i-aluniv">Alamat Universitas / Sekolah</label><textarea id="i-aluniv" name="alamat_universitas" maxlength="400"></textarea></div>
+        </div>
+      </div>
+
+      <div class="bagian">
+        <h2><span class="langkah">4</span>Gereja</h2>
+        <div class="kisi">
+          <div class="penuh"><label for="i-gereja">Nama Gereja</label><input id="i-gereja" name="gereja" maxlength="150"></div>
+          <div class="penuh"><label for="i-algereja">Alamat Gereja</label><textarea id="i-algereja" name="alamat_gereja" maxlength="400"></textarea></div>
+        </div>
+      </div>
+
+      <div class="bagian">
+        <h2><span class="langkah">5</span>Keluarga &amp; Pekerjaan</h2>
+        <div class="kisi">
+          <div><label for="i-status">Status Pernikahan</label>
+            <select id="i-status" name="status_nikah">
+              <option value="">— Pilih —</option><option>Menikah</option><option>Belum Menikah</option><option>Janda / Duda</option>
+            </select></div>
+          <div><label for="i-pas">Nama Suami / Istri</label><input id="i-pas" name="pasangan" maxlength="120"></div>
+          <div class="penuh"><label for="i-ttlpas">Tempat / Tanggal Lahir Suami-Istri</label><input id="i-ttlpas" name="ttl_pasangan" maxlength="150"></div>
+          <div class="penuh"><label for="i-anak">Nama Anak (bila ada)</label>
+            <textarea id="i-anak" name="anak" maxlength="500" placeholder="Tulis satu nama per baris, boleh disertai tempat/tanggal lahir"></textarea></div>
+          <div class="penuh"><label for="i-gajipak">Gaji / Honor dari Mengajar PAK per Bulan</label>
+            <input id="i-gajipak" name="gaji_pak" maxlength="60" placeholder="Contoh: 750.000 — atau tulis: Tidak dibayar">
+            <p class="petunjuk rata" style="margin-bottom:0">Jumlahkan dari seluruh sekolah yang Anda layani.
+            Bila Anda mengajar <strong>tanpa menerima gaji atau honor sama sekali</strong>, tulis saja
+            <strong>Tidak dibayar</strong> — jangan dikosongkan, supaya pengurus tahu keadaan
+            sebenarnya dan bukan mengira Anda lupa mengisi.</p></div>
+          <div><label for="i-sambil">Pekerjaan Sambilan</label><input id="i-sambil" name="pekerjaan_sambilan" maxlength="120"></div>
+          <div><label for="i-darah">Golongan Darah</label>
+            <select id="i-darah" name="gol_darah">
+              <option value="">— Pilih —</option><option>A</option><option>B</option><option>AB</option><option>O</option>
+            </select></div>
+          <div><label for="i-jabatan">Jabatan di Desa / Kampung</label>
+            <input id="i-jabatan" name="jabatan_desa" maxlength="150" placeholder="Contoh: RT, RW, Kadus, BPD"></div>
+        </div>
+      </div>
+
+      <div class="bagian">
+        <h2><span class="langkah">6</span>Rekening Bank</h2>
+        <div class="kisi">
+          <div><label for="i-norek">Nomor Rekening <span class="wajib">*</span></label>
+            <input id="i-norek" name="no_rekening" required inputmode="numeric" minlength="5" maxlength="40" placeholder="Contoh: 1234567890"></div>
+          <div><label for="i-bank">Nama Bank <span class="wajib">*</span></label>
+            <input id="i-bank" name="nama_bank" required minlength="2" maxlength="80" placeholder="Contoh: BRI, BNI, Bank NTT"></div>
+          <div><label for="i-cabang">Cabang Bank <span class="wajib">*</span></label>
+            <input id="i-cabang" name="cabang_bank" required minlength="2" maxlength="120" placeholder="Contoh: KCP Soe"></div>
+          <div><label for="i-emailrek">Email Rekening <span class="wajib">*</span></label>
+            <input id="i-emailrek" name="email_rekening" type="email" inputmode="email" required maxlength="120" autocomplete="email" placeholder="nama@contoh.com"></div>
+        </div>
+        <p class="petunjuk rata" style="margin-bottom:0">Email Rekening adalah alamat email yang
+        <strong>terdaftar di rekening bank tersebut</strong>.</p>
+      </div>
+
+      <div class="bagian">
+        <h2><span class="langkah">7</span>Sekolah yang Dilayani Saat Ini</h2>
+        <p class="petunjuk">Diisi hanya dengan sekolah tempat Anda mengajar Agama Kristen. Isi
+        <strong>satu blok untuk satu kelas</strong> — sekolah yang sama boleh ditulis beberapa kali
+        untuk kelas berbeda.</p>
+        <div id="daftarSekolah"></div>
+        <button type="button" class="kedua" id="tambahSekolah">+ Tambah Sekolah / Kelas</button>
+      </div>
+
+      <div class="bagian">
+        <h2><span class="langkah">8</span>Pernyataan</h2>
+        <label class="centang" for="i-setuju" style="margin-left:38px">
+          <input id="i-setuju" type="checkbox" required>
+          <span>Saya menyatakan bahwa data yang saya isi di atas adalah benar, dan saya bersedia
+          data ini digunakan Yayasan Suluh Prana Indonesia untuk keperluan pendataan dan pembinaan guru.
+          <span class="wajib">*</span></span>
+        </label>
+      </div>
+
+      <div class="aksi-form">
+        <button type="button" class="kedua" id="tombolKosong">Kosongkan Formulir</button>
+        <button type="submit" class="utama" id="tombolKirim">Kirim Data Guru</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="kartu sukses tersembunyi" id="kartuSukses">
+    <img src="assets/logo-mark.png" alt="" aria-hidden="true">
+    <h2>Data Berhasil Dikirim</h2>
+    <p>Terima kasih. Data Anda sudah tersimpan pada sistem pendataan Yayasan Suluh Prana Indonesia.</p>
+    <p style="margin-bottom:0"><small>Nomor bukti pengiriman:</small></p>
+    <div class="kode" id="kodeBukti"></div>
+    <p><small>Simpan atau foto nomor ini bila sewaktu-waktu perlu ditanyakan kepada pengurus.</small></p>
+    <button class="kedua" id="tombolIsiLagi">Isi Data Guru Lain</button>
+  </div>
+</main>
+
+<footer class="kaki">
+  <img src="assets/logo-mark.png" alt="">
+  Yayasan Suluh Prana Indonesia · Sistem Pendataan Guru
+</footer>
+
+<script type="module" src="js/form.js"></script>
+</body>
+</html>

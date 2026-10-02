@@ -1,0 +1,189 @@
+/* ============================================================
+   Pendataan Guru — Yayasan Suluh Prana Indonesia
+   Palet warna diambil langsung dari logo yayasan.
+   ============================================================ */
+:root{
+  --merah:#c4202a;
+  --merah-tua:#8f1219;
+  --merah-terang:#e04a4a;
+  --merah-lembut:#fdf1f1;
+  --bg:#f7f4f4;
+  --kartu:#fff;
+  --teks:#1f1b1c;
+  --abu:#6d6467;
+  --garis:#e8dedf;
+  --radius:16px;
+  --bayang:0 6px 24px rgba(90,20,25,.07);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--teks);line-height:1.55;
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+}
+
+/* ---------- kepala halaman ---------- */
+.kepala{background:#fff;border-bottom:1px solid var(--garis)}
+.kepala .isi{max-width:1000px;margin:auto;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.kepala img{height:52px;width:auto;display:block}
+.kepala .label{font-size:13px;color:var(--abu);font-weight:600;letter-spacing:.02em;text-align:right}
+.pita{height:4px;background:linear-gradient(90deg,var(--merah-tua),var(--merah),var(--merah-terang))}
+
+.hero{background:linear-gradient(135deg,var(--merah-tua),var(--merah) 55%,var(--merah-terang));color:#fff;padding:34px 16px 38px}
+.hero .isi{max-width:1000px;margin:auto}
+.hero h1{margin:0 0 6px;font-size:27px;letter-spacing:-.4px;line-height:1.2}
+.hero p{margin:0;opacity:.94;font-size:15.5px;max-width:62ch}
+
+main{max-width:1000px;margin:-18px auto 60px;padding:0 16px;position:relative}
+.lebar-admin main,main.lebar{max-width:1200px}
+
+/* ---------- kartu & bagian ---------- */
+.kartu{background:var(--kartu);border-radius:var(--radius);padding:24px;box-shadow:var(--bayang);margin-bottom:18px}
+.bagian{border-top:1px solid #f0e9ea;padding-top:26px;margin-top:26px}
+.bagian:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.bagian h2,.kartu>h2{margin:0 0 4px;color:var(--merah-tua);font-size:19px;display:flex;align-items:center}
+.langkah{
+  display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,var(--merah),var(--merah-tua));color:#fff;font-size:13px;font-weight:700;
+  margin-right:10px;flex:none;box-shadow:0 2px 6px rgba(143,18,25,.28)
+}
+.petunjuk{color:var(--abu);font-size:13.5px;margin:2px 0 18px 38px}
+.petunjuk.rata{margin-left:0}
+
+/* ---------- isian ---------- */
+.kisi{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.penuh{grid-column:1/-1}
+label{display:block;font-weight:600;margin-bottom:6px;font-size:14px}
+input,select,textarea{
+  width:100%;padding:11px 12px;border:1px solid #d9cccd;border-radius:10px;font-size:15px;
+  background:#fff;font-family:inherit;color:inherit
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--merah);outline-offset:-1px;border-color:var(--merah)}
+input[type=file]{padding:9px 10px;background:#fdfbfb}
+textarea{min-height:84px;resize:vertical}
+.wajib{color:var(--merah)}
+.centang{display:flex;gap:10px;align-items:flex-start;font-weight:500;font-size:14.5px}
+.centang input{width:18px;height:18px;margin:2px 0 0;flex:none;accent-color:var(--merah)}
+
+/* ---------- foto ---------- */
+.foto{display:flex;gap:20px;align-items:flex-start}
+.pratinjau{
+  width:136px;height:170px;border:2px dashed #dcc7c8;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;text-align:center;color:#9a8b8d;overflow:hidden;background:var(--merah-lembut);
+  flex:none;font-size:13px;padding:8px
+}
+.pratinjau img{width:100%;height:100%;object-fit:cover}
+
+/* ---------- blok sekolah ---------- */
+.sekolah{border:1px solid var(--garis);border-radius:12px;padding:16px;margin-bottom:14px;background:#fdfbfb}
+.sekolah .kepala-blok{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px}
+.sekolah .nomor{font-weight:700;color:var(--merah-tua);font-size:14px}
+.kisi-sekolah{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+
+/* ---------- tombol ---------- */
+button,.tombol{border:0;border-radius:10px;padding:11px 18px;font-weight:600;cursor:pointer;font-size:15px;font-family:inherit;line-height:1.3}
+button:disabled{opacity:.6;cursor:not-allowed}
+.utama{background:linear-gradient(135deg,var(--merah),var(--merah-tua));color:#fff;box-shadow:0 3px 10px rgba(143,18,25,.24)}
+.utama:hover:not(:disabled){filter:brightness(1.07)}
+.kedua{background:var(--merah-lembut);color:var(--merah-tua)}
+.kedua:hover{background:#fae4e4}
+.bahaya{background:#fff0f0;color:#a3161d}
+.bahaya:hover{background:#ffe2e2}
+.kecil{padding:8px 13px;font-size:13.5px}
+.aksi-form{display:flex;gap:10px;justify-content:flex-end;margin-top:28px;padding-top:22px;border-top:1px solid #f0e9ea}
+
+/* ---------- pesan ---------- */
+.catatan{background:var(--merah-lembut);border-left:4px solid var(--merah);padding:13px 15px;border-radius:10px;font-size:14.5px;margin-bottom:20px}
+.pesan{padding:14px 16px;border-radius:12px;margin-bottom:18px;font-weight:500;display:none;white-space:pre-line}
+.pesan.ok{background:#e9f7ee;color:#15653a;border-left:4px solid #2e9e5b}
+.pesan.galat{background:#fff0f0;color:#96161d;border-left:4px solid var(--merah)}
+.pesan.info{background:var(--merah-lembut);color:var(--merah-tua);border-left:4px solid var(--merah-terang)}
+.memuat{opacity:.55;pointer-events:none}
+
+/* ---------- halaman sukses ---------- */
+.sukses{text-align:center;padding:42px 24px}
+.sukses img{width:88px;height:88px;margin-bottom:6px}
+.sukses h2{justify-content:center;font-size:23px;margin:12px 0 8px}
+.kode{
+  display:inline-block;background:var(--merah-lembut);border:1px dashed #e3b9bb;border-radius:10px;
+  padding:10px 18px;font-family:ui-monospace,Menlo,monospace;font-size:17px;letter-spacing:1.5px;
+  margin:14px 0;color:var(--merah-tua);font-weight:700
+}
+
+/* ---------- kaki ---------- */
+.kaki{text-align:center;color:var(--abu);font-size:13px;padding:0 16px 44px}
+.kaki img{height:34px;opacity:.65;display:block;margin:0 auto 8px}
+
+/* ---------- dashboard ---------- */
+.statistik{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.stat{background:#fff;border-radius:var(--radius);padding:18px;box-shadow:var(--bayang);border-top:3px solid var(--merah)}
+.stat .angka{font-size:28px;font-weight:800;color:var(--merah-tua);line-height:1.15}
+.stat .judul{font-size:13px;color:var(--abu);margin-top:2px}
+.perkakas{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.perkakas>div:first-child{flex:1 1 240px}
+.perkakas>div:nth-child(2){flex:0 1 190px}
+.jumlah{font-size:13px;color:var(--abu);margin:12px 0 0}
+.baris{display:flex;gap:16px;border-top:1px solid #f2eaeb;padding:18px 0}
+.baris:first-child{border-top:0;padding-top:0}
+.avatar{
+  width:86px;height:108px;border-radius:11px;object-fit:cover;background:var(--merah-lembut);flex:none;
+  cursor:pointer;border:1px solid var(--garis);display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:#a8969a;text-align:center
+}
+.baris .rincian{flex:1;min-width:0}
+.baris h3{margin:0 0 5px;color:var(--merah-tua);font-size:17px}
+.meta{color:#4d4446;font-size:13.5px}
+.meta b{color:var(--teks)}
+.tanda{display:inline-block;background:var(--merah-lembut);color:var(--merah-tua);border-radius:20px;padding:3px 11px;font-size:12px;margin:6px 6px 0 0}
+.tabel-mini{margin-top:11px;border:1px solid var(--garis);border-radius:10px;overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+.tabel-mini table{min-width:660px}
+th,td{border-bottom:1px solid var(--garis);padding:8px 10px;text-align:left;font-size:13px}
+th{background:var(--merah-lembut);color:var(--merah-tua);font-weight:600}
+tr:last-child td{border-bottom:0}
+.aksi{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.kosong{text-align:center;color:var(--abu);padding:34px 10px}
+.tersembunyi{display:none!important}
+.masuk{max-width:430px;margin:26px auto}
+.masuk p{color:var(--abu);font-size:14px}
+
+/* ---------- modal detail ---------- */
+.modal{position:fixed;inset:0;background:rgba(50,12,15,.62);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto;z-index:50}
+.modal-isi{background:#fff;border-radius:var(--radius);max-width:920px;width:100%;padding:26px;position:relative}
+.tutup{position:absolute;top:14px;right:14px}
+.kisi-detail{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px}
+.item{padding:8px 0;border-bottom:1px solid #f6f0f1;font-size:14px}
+.item .k{color:var(--abu);font-size:12.5px}
+.item .v{font-weight:500;word-break:break-word}
+.kepala-detail{display:flex;gap:20px;margin-bottom:18px;align-items:flex-start}
+.kepala-detail img{width:124px;height:155px;object-fit:cover;border-radius:11px;border:1px solid var(--garis)}
+.judul-blok{margin:20px 0 6px;color:var(--merah-tua);font-size:15px;font-weight:700;border-top:1px solid #f2eaeb;padding-top:16px}
+
+/* ---------- responsif ---------- */
+@media(max-width:900px){
+  .statistik{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:760px){
+  .kisi,.kisi-sekolah{grid-template-columns:1fr}
+  .foto{flex-direction:column}
+  .aksi-form{flex-direction:column-reverse}
+  .aksi-form button{width:100%}
+  .hero h1{font-size:22px}
+  .kepala img{height:42px}
+  .kepala .label{display:none}
+  .kartu{padding:20px 17px}
+}
+@media(max-width:620px){
+  .perkakas>div{flex:1 1 100%}
+  .perkakas button{width:100%}
+  .baris{flex-direction:column}
+  .kisi-detail{grid-template-columns:1fr}
+  .kepala-detail{flex-direction:column}
+}
+@media print{
+  .kepala,.hero,.perkakas,.aksi,.tutup,.statistik,#daftar,.jumlah,.kaki{display:none!important}
+  .modal{position:static;background:#fff;padding:0;overflow:visible}
+  .modal-isi{box-shadow:none;padding:0;max-width:100%}
+  body{background:#fff}
+  main{margin:0;max-width:100%}
+}

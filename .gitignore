@@ -1,0 +1,15 @@
+.vercel
+.env*
+
+# Repo git hanya memuat kode tiga aplikasi; sisanya tetap lokal
+/*
+!/.gitignore
+!/laporan-guru/
+!/pendataan-guru-yspi/
+# keuangan-web sengaja TIDAK ikut: kodenya memuat angka & keputusan keuangan
+
+# Data, log, sandi, dan sesi tidak pernah ikut ke GitHub
+data/
+desktop.ini
+node_modules/
+*.log

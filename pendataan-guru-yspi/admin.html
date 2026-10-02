@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Dashboard Pengurus — Pendataan Guru YSPI</title>
+<meta name="theme-color" content="#c4202a">
+<link rel="icon" href="assets/logo-mark.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="css/gaya.css">
+</head>
+<body>
+
+<header class="kepala">
+  <div class="isi">
+    <img src="assets/logo-yspi.png" alt="Yayasan Suluh Prana Indonesia" width="1200" height="625">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="label" id="akun">Dashboard Pengurus</div>
+      <button id="tombolKeluar" class="kedua kecil tersembunyi">Keluar</button>
+    </div>
+  </div>
+</header>
+<div class="pita"></div>
+
+<main class="lebar" style="margin-top:24px">
+  <div id="pesan" class="pesan" role="status" aria-live="polite"></div>
+
+  <!-- ================= LOGIN ================= -->
+  <section id="kartuMasuk" class="kartu masuk">
+    <h2>Login Pengurus</h2>
+    <p>Halaman ini hanya untuk pengurus Yayasan Suluh Prana Indonesia. Gunakan akun
+       yang sudah dibuatkan di Firebase Authentication.</p>
+    <form id="formMasuk">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <div style="height:12px"></div>
+      <label for="katasandi">Password</label>
+      <input id="katasandi" type="password" autocomplete="current-password" required>
+      <div style="height:18px"></div>
+      <button class="utama" id="tombolMasuk" style="width:100%">Masuk</button>
+    </form>
+    <div style="text-align:center;margin-top:14px">
+      <button type="button" class="kedua kecil" id="tombolLupa">Lupa password?</button>
+    </div>
+  </section>
+
+  <!-- ================= DASHBOARD ================= -->
+  <section id="dashboard" class="tersembunyi">
+    <div class="statistik">
+      <div class="stat"><div class="angka" id="stGuru">0</div><div class="judul">Guru terdata</div></div>
+      <div class="stat"><div class="angka" id="stSekolah">0</div><div class="judul">Sekolah berbeda</div></div>
+      <div class="stat"><div class="angka" id="stKelas">0</div><div class="judul">Kelas dilayani</div></div>
+      <div class="stat"><div class="angka" id="stSiswa">0</div><div class="judul">Total siswa</div></div>
+    </div>
+
+    <div class="kartu">
+      <div class="perkakas">
+        <div>
+          <label for="cari">Cari</label>
+          <input id="cari" placeholder="Nama guru, HP, gereja, sekolah, kelas, desa…">
+        </div>
+        <div>
+          <label for="urut">Urutkan</label>
+          <select id="urut">
+            <option value="baru">Terbaru dahulu</option>
+            <option value="lama">Terlama dahulu</option>
+            <option value="nama">Nama A–Z</option>
+            <option value="kelas">Jumlah kelas terbanyak</option>
+          </select>
+        </div>
+        <div><button id="tombolMuatUlang" class="kedua">Muat Ulang</button></div>
+        <div><button id="tombolCsv" class="kedua">Export CSV</button></div>
+        <div><button id="tombolExcel" class="kedua">Export Biodata Excel</button></div>
+        <div><button id="tombolCetakSemua" class="kedua">Cetak Semua (PDF)</button></div>
+      </div>
+      <p class="jumlah" id="jumlah"></p>
+      <p class="jumlah" style="margin-top:4px">
+        <strong>Export CSV</strong> — tabel datar untuk diolah: satu baris per sekolah,
+        data guru terulang di tiap baris.
+        <strong>Export Biodata Excel</strong> — satu lembar per guru berikut fotonya.
+        <strong>Cetak Semua (PDF)</strong> — satu halaman A4 per guru, langsung ke printer
+        atau disimpan sebagai PDF. Ketiganya mengikuti hasil pencarian yang sedang tampil.
+      </p>
+    </div>
+
+    <div class="kartu"><div id="daftar"></div></div>
+  </section>
+</main>
+
+<footer class="kaki">
+  Yayasan Suluh Prana Indonesia · Sistem Pendataan Guru
+</footer>
+
+<script type="module" src="js/admin.js"></script>
+</body>
+</html>
