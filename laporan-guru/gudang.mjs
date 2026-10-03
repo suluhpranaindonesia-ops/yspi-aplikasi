@@ -7,11 +7,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { pathToFileURL } from 'node:url';
 import { buatXlsx } from './xlsx-tulis.mjs';
-
-const PENGHUBUNG_LAMA = 'C:\\Users\\suluh\\Documents\\Codex\\2026-09-14\\co\\outputs\\yspi-supabase';
-const { kekurangan } = await import(pathToFileURL(path.join(PENGHUBUNG_LAMA, 'aturan.mjs')).href);
+import { kekurangan } from './aturan-laporan.mjs';
 
 export const NAMA_XLSX = 'Rekap-Laporan-Guru-YSPI.xlsx';
 export const EKST = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'video/mp4': '.mp4', 'video/webm': '.webm' };

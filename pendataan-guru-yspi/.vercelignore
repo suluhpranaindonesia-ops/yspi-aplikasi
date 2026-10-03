@@ -1,0 +1,5 @@
+# Jangan ikut terunggah ke situs publik
+.env*
+*.bak-*
+.vercel
+desktop.ini

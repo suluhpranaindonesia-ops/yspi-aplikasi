@@ -275,6 +275,40 @@ function pisahkanFoto(sumber) {
   return { data: cocok[2], jenis };
 }
 
+/** Gambar apa pun yang bisa dibaca browser → JPEG data URL (Excel tidak mengenal WEBP). */
+async function keJpeg(blob) {
+  const gambar = await createImageBitmap(blob);
+  const kanvas = document.createElement('canvas');
+  kanvas.width = gambar.width; kanvas.height = gambar.height;
+  const k = kanvas.getContext('2d');
+  k.fillStyle = '#fff'; k.fillRect(0, 0, kanvas.width, kanvas.height);
+  k.drawImage(gambar, 0, 0);
+  gambar.close?.();
+  return kanvas.toDataURL('image/jpeg', 0.9);
+}
+
+/**
+ * Foto mode Firestore datang sebagai data URL; mode Storage sebagai URL unduhan
+ * HTTPS Firebase Storage (berisi token akses dari getDownloadURL). Keduanya dijadikan
+ * { data, jenis } untuk ExcelJS. URL Storage diambil dengan fetch biasa — bucket harus
+ * mengizinkan CORS untuk domain situs ini, kalau tidak foto dilewati dan dihitung gagal.
+ */
+async function siapkanFoto(sumber) {
+  if (!sumber) return null;
+  const s = String(sumber);
+  const langsung = pisahkanFoto(s);
+  if (langsung) return langsung;
+  if (/^data:image\/webp;base64,/i.test(s)) return pisahkanFoto(await keJpeg(await (await fetch(s)).blob()));
+  if (/^https:\/\/firebasestorage\.googleapis\.com\//.test(s) || /^https:\/\/[\w.-]+\.firebasestorage\.app\//.test(s)) {
+    const r = await fetch(s, { credentials: 'omit' });
+    if (!r.ok) throw new Error('Foto Storage tidak bisa diunduh (' + r.status + ')');
+    const blob = await r.blob();
+    if (!/^image\//.test(blob.type)) throw new Error('Berkas foto bukan gambar');
+    return pisahkanFoto(await keJpeg(blob));
+  }
+  return null;
+}
+
 /**
  * @param daftarGuru  array guru (sudah tersaring & terurut sesuai layar)
  * @param ambilFoto   async (guru) => data URL atau URL, boleh null
@@ -288,12 +322,14 @@ export async function unduhBiodataExcel({ daftarGuru, ambilFoto, lapor = () => {
 
   lapor(`Mengumpulkan foto 0 dari ${daftarGuru.length}…`);
   const siap = [];
+  let fotoGagal = 0;
   for (let i = 0; i < daftarGuru.length; i++) {
     const guru = daftarGuru[i];
     let foto = null;
     try {
-      foto = pisahkanFoto(await ambilFoto(guru));
+      foto = await siapkanFoto(await ambilFoto(guru));
     } catch (err) {
+      fotoGagal++;
       console.warn('Foto gagal diambil untuk', guru.nama, err);
     }
     siap.push({ guru, foto });
@@ -326,5 +362,5 @@ export async function unduhBiodataExcel({ daftarGuru, ambilFoto, lapor = () => {
   tautan.remove();
   setTimeout(() => URL.revokeObjectURL(tautan.href), 2000);
 
-  return { jumlah: siap.length, berfoto: siap.filter(x => x.foto).length };
+  return { jumlah: siap.length, berfoto: siap.filter(x => x.foto).length, fotoGagal };
 }

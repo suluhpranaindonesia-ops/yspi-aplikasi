@@ -10,12 +10,11 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { bukaGudang } from './gudang.mjs';
+import { ambilSemua, ambilBerkas, sensor } from './supabase-baca.mjs';
 
 const AKAR = path.dirname(fileURLToPath(import.meta.url));
-const PENGHUBUNG = 'C:\\Users\\suluh\\Documents\\Codex\\2026-09-14\\co\\outputs\\yspi-supabase';
-const PROYEK = 'xpvaayxfsfvwyizkyrzw', CLOUD = `https://${PROYEK}.supabase.co`;
 const TUJUAN = process.env.LAPORAN_GURU_TUJUAN || 'C:\\Users\\suluh\\Vault-SPI\\DRAFT\\Laporan Guru';
 const DATA = process.env.LAPORAN_GURU_DATA || path.join(AKAR, 'data');
 const PORT = Number(process.env.LAPORAN_GURU_PORT || 3463);
@@ -29,19 +28,6 @@ function catat(pesan) {
   try { fs.appendFileSync(path.join(DATA, 'sinkron.log'), baris + '\n'); } catch {}
 }
 
-let kunci = '';
-async function ambil(rute, biner = false) {
-  if (!kunci) {
-    const { unprotectSecret } = await import(pathToFileURL(path.join(PENGHUBUNG, 'secure-config.mjs')).href);
-    const cfg = JSON.parse(fs.readFileSync(path.join(PENGHUBUNG, 'state', 'connection.json'), 'utf8'));
-    if (cfg.project !== PROYEK) throw new Error('Konfigurasi penghubung bukan proyek Pelaporan Guru YSPI.');
-    kunci = unprotectSecret(cfg.protectedKey);
-  }
-  // Hanya GET. Tidak ada method lain di berkas ini.
-  const r = await fetch(CLOUD + rute, { method: 'GET', headers: { apikey: kunci }, signal: AbortSignal.timeout(60_000), redirect: 'error' });
-  if (!r.ok) throw new Error('Supabase ' + r.status + ' pada ' + rute.split('?')[0]);
-  return biner ? Buffer.from(await r.arrayBuffer()) : r.json();
-}
 
 const gudang = bukaGudang(TUJUAN, catat);
 const SUMBER = { review: 'Perlu diperiksa', approved: 'Disetujui' };
@@ -52,8 +38,9 @@ async function sinkron() {
   status.jalan = true;
   status.terakhir = new Date().toISOString();
   try {
-    const laporan = await ambil('/rest/v1/yspi_reports?select=*&order=created_at.asc&limit=10000');
-    const media = await ambil('/rest/v1/yspi_media?select=*&order=created_at.asc&limit=10000');
+    // Per halaman 1.000 sampai habis; gagal kalau jumlahnya tidak sama dengan total Supabase.
+    const laporan = await ambilSemua('yspi_reports');
+    const media = await ambilSemua('yspi_media');
     let baru = 0, diubah = 0, mediaBaru = 0;
     for (const { created_by, status: st, issue_status, ...isi } of laporan) {
       const h = gudang.samakan({ ...isi, status_periksa: SUMBER[st] || st, status_kendala: KENDALA[issue_status] || issue_status });
@@ -61,7 +48,7 @@ async function sinkron() {
     }
     for (const m of media) {
       if (gudang.adaMedia(m.id) || !gudang.laporan(m.report_id)) continue;
-      const isi = await ambil('/storage/v1/object/authenticated/yspi-media/' + m.path.split('/').map(encodeURIComponent).join('/'), true);
+      const isi = await ambilBerkas('/storage/v1/object/authenticated/yspi-media/' + m.path.split('/').map(encodeURIComponent).join('/'));
       gudang.tambahMedia({ id: m.id, report_id: m.report_id, type: m.type, isi, created_at: m.created_at, name: m.name });
       mediaBaru++;
     }
@@ -69,7 +56,7 @@ async function sinkron() {
     Object.assign(status, { berhasil: new Date().toISOString(), laporan: laporan.length, media: media.length, baru, diubah, mediaBaru, galat: '' });
     if (baru || diubah || mediaBaru) catat(`Sinkron: ${laporan.length} laporan (${baru} baru, ${diubah} diubah), ${mediaBaru} media baru.`);
   } catch (e) {
-    status.galat = String(e.message || e).replaceAll(kunci || '\u0000', '[disensor]');
+    status.galat = sensor(e.message || e);
     catat('GAGAL: ' + status.galat);
   } finally {
     status.jalan = false;

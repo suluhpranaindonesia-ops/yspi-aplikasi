@@ -556,8 +556,15 @@ function unduh(isi, namaBerkas, jenis) {
 const namaBerkas = ext => `pendataan-guru-yspi-${new Date().toISOString().slice(0, 10)}.${ext}`;
 
 $('#tombolCsv').addEventListener('click', () => {
-  // pemisah titik koma supaya langsung rapi di Excel berbahasa Indonesia
-  const sel = v => '"' + String(v).replace(/"/g, '""') + '"';
+  // pemisah titik koma supaya langsung rapi di Excel berbahasa Indonesia.
+  // Isian formulir publik yang diawali = + - @ (atau tab/enter) akan dibaca Excel/Sheets
+  // sebagai rumus walaupun dikutip (CSV injection, OWASP). Diberi awalan ' supaya tetap teks.
+  // Nomor HP berawalan 08… tidak tersentuh; "+62…" tampil dengan ' di depannya.
+  const sel = v => {
+    let s = String(v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
   const isi = [JUDUL_KOLOM, ...barisExport()].map(r => r.map(sel).join(';')).join('\r\n');
   unduh(isi, namaBerkas('csv'), 'text/csv;charset=utf-8');
 });
@@ -585,7 +592,8 @@ $('#tombolExcel').addEventListener('click', async () => {
       lapor: keterangan => pesan(keterangan, 'info')
     });
     pesan(`Berkas Excel selesai: ${hasil.jumlah} lembar biodata, `
-        + `${hasil.berfoto} di antaranya lengkap dengan foto.`, 'ok');
+        + `${hasil.berfoto} di antaranya lengkap dengan foto.`
+        + (hasil.fotoGagal ? ` ${hasil.fotoGagal} foto gagal diambil (lihat Console).` : ''), 'ok');
   } catch (err) {
     console.error(err);
     pesan('Gagal membuat berkas Excel. ' + jelaskanGalat(err));
