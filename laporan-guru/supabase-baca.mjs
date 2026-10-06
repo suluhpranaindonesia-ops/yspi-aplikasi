@@ -9,8 +9,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export const PROYEK = 'xpvaayxfsfvwyizkyrzw';
-export const CLOUD = `https://${PROYEK}.supabase.co`;
+// Proyeknya mengikuti konfigurasi penghubung (state/connection.json), jadi setelah penghubung
+// pindah proyek Supabase, sinkron ikut pindah tanpa kode diubah.
+let cloud = '';
 export const PENGHUBUNG = process.env.LAPORAN_GURU_PENGHUBUNG
   || 'C:\\Users\\suluh\\Documents\\Codex\\2026-09-14\\co\\outputs\\yspi-supabase';
 // Supabase membatasi satu respons ke 1.000 baris (bawaan max-rows), jadi halaman tidak boleh lebih besar.
@@ -25,14 +26,16 @@ export async function bukaKunci() {
     throw new Error(`Konfigurasi penghubung tidak ditemukan di ${PENGHUBUNG}. Atur LAPORAN_GURU_PENGHUBUNG.`);
   const { unprotectSecret } = await import(pathToFileURL(modul).href);
   const cfg = JSON.parse(fs.readFileSync(fileCfg, 'utf8'));
-  if (cfg.project !== PROYEK) throw new Error('Konfigurasi penghubung bukan proyek Pelaporan Guru YSPI.');
+  if (!/^[a-z0-9]{20}$/.test(cfg.project || '')) throw new Error('Konfigurasi penghubung tidak memuat ref proyek Supabase yang sah.');
+  cloud = `https://${cfg.project}.supabase.co`;
   kunci = unprotectSecret(cfg.protectedKey);
   return kunci;
 }
 export const sensor = (teks) => (kunci ? String(teks).replaceAll(kunci, '[disensor]') : String(teks));
 
 async function get(rute, header = {}) {
-  const r = await fetch(CLOUD + rute, { method: 'GET', headers: { apikey: await bukaKunci(), ...header }, signal: AbortSignal.timeout(60_000), redirect: 'error' });
+  const apikey = await bukaKunci();
+  const r = await fetch(cloud + rute, { method: 'GET', headers: { apikey, ...header }, signal: AbortSignal.timeout(60_000), redirect: 'error' });
   if (!r.ok) throw new Error('Supabase ' + r.status + ' pada ' + rute.split('?')[0]);
   return r;
 }
