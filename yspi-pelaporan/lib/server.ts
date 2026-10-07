@@ -1,0 +1,8 @@
+import {env} from 'cloudflare:workers';
+import {getChatGPTUser} from '@/app/chatgpt-auth';
+import {reportSchema,reportKeys} from './report';
+export function db(){if(!env.DB)throw Error('Penyimpanan belum tersedia');return env.DB}
+export function bucket(){if(!env.BUCKET)throw Error('Penyimpanan media belum tersedia');return env.BUCKET}
+export async function authenticate(req:Request,bridgeOnly=false){const key=(env as any).BRIDGE_TOKEN;const supplied=req.headers.get('authorization')||'';if(key&&supplied==='Bearer '+key)return 'bridge';if(bridgeOnly)throw new Error('UNAUTHORIZED');if(!(await getChatGPTUser()))throw new Error('UNAUTHORIZED');if(!['GET','HEAD'].includes(req.method)){const origin=req.headers.get('origin');if(!origin||origin!==new URL(req.url).origin)throw new Error('UNAUTHORIZED')}return 'user'}
+export async function putReport(body:any,id:string,source='manual',raw='',model='',insertOnly=false){const r=reportSchema.parse(body),now=new Date().toISOString();const keys=['id',...reportKeys,'raw','source','status','model','created_at','updated_at'];const vals=[id,...reportKeys.map(k=>(r as any)[k]),raw,source,'review',model,now,now];let sql='INSERT INTO reports ('+keys.join(',')+') VALUES ('+keys.map(()=>'?').join(',')+')';sql+=insertOnly?' ON CONFLICT(id) DO NOTHING':' ON CONFLICT(id) DO UPDATE SET '+[...reportKeys,'updated_at'].map(k=>k+'=excluded.'+k).join(',');await db().prepare(sql).bind(...vals).run();return id}
+export async function allReports(){const [r,m]=await Promise.all([db().prepare('SELECT * FROM reports ORDER BY created_at DESC LIMIT 2000').all(),db().prepare('SELECT id,report_id,name,type FROM media').all()]);return r.results.map((x:any)=>({...x,attachments:m.results.filter((a:any)=>a.report_id===x.id)}))}

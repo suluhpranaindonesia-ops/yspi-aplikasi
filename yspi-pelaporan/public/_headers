@@ -1,0 +1,10 @@
+# Header keamanan untuk berkas statis (halaman utama, JS, CSS). Header untuk API
+# dipasang di next.config.ts. Samakan keduanya bila diubah.
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Content-Security-Policy: frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'
+  X-Robots-Tag: noindex, nofollow

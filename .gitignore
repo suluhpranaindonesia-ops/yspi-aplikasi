@@ -1,13 +1,15 @@
 .vercel
 .env*
 
-# Repo git hanya memuat kode tiga aplikasi; sisanya tetap lokal
+# Repo git hanya memuat kode aplikasi yang di-whitelist; sisanya tetap lokal
 /*
 !/.gitignore
 !/laporan-guru/
 !/pendataan-guru-yspi/
 !/kewajiban/
 !/wa-pengingat/
+!/yspi-pelaporan/
+!/.github/
 # kewajiban: hanya kode. Isi pesan, nominal, nama penerima, alamat rahasia
 # kalender, dan ID grup tetap lokal.
 kewajiban/hasil/

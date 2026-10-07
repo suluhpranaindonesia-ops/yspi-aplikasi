@@ -1,0 +1,12 @@
+{
+  "$comment": "Deploy ke Cloudflare Workers milik sendiri. Jalankan: npm run build lalu npx wrangler deploy --config wrangler.production.json --secrets-file .dev.vars. Data & login ada di Supabase, jadi D1/R2 tidak dipakai.",
+  "name": "yspi-pelaporan",
+  "main": "dist/server/index.js",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "no_bundle": true,
+  "rules": [{ "type": "ESModule", "globs": ["**/*.js", "**/*.mjs"] }],
+  "assets": { "directory": "dist/client" },
+  "observability": { "enabled": true },
+  "workers_dev": true
+}
