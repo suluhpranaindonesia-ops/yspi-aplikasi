@@ -5,9 +5,13 @@ Website pengurus untuk cerita & pencapaian guru: https://yspi-pelaporan.danielwi
 - **Data & login:** Supabase proyek `qpqpvktvezdqzdcpueve` (akun GitHub `suluhpranaindonesia-ops`).
   Pengurus login email + password; akses data dijaga RLS (`yspi_members`).
 - **Hosting:** Cloudflare Worker `yspi-pelaporan`.
-- **Deploy:** otomatis lewat GitHub Actions (`.github/workflows/deploy-pelaporan.yml`) setiap push
-  ke `main` yang mengubah folder ini. Perlu secret repo `CLOUDFLARE_API_TOKEN` dan
-  `CLOUDFLARE_ACCOUNT_ID`; tanpa itu workflow hanya build.
+- **Deploy:** otomatis lewat **Cloudflare Workers Builds** yang tersambung ke repo ini (aplikasi
+  GitHub "Cloudflare Workers and Pages", hanya untuk repo `yspi-aplikasi`). Setiap push ke `main`:
+  root `/yspi-pelaporan`, build `npm run build`, deploy
+  `npx wrangler deploy --config wrangler.production.json`. Variabel Supabase tersimpan sebagai
+  secret di Worker, bukan di repo.
+- **Cek build di GitHub:** `.github/workflows/deploy-pelaporan.yml` ikut membangun setiap perubahan
+  folder ini; langkah deploy-nya dilewati karena repo tidak menyimpan token Cloudflare.
 - **Isi laporan** datang dari bot WhatsApp + AI lokal (qwen3:8b) di PC kantor, bukan dari website ini.
 
 Folder ini adalah sumber resmi kodenya. Salinan lama di folder Codex tidak dipakai untuk deploy lagi.
