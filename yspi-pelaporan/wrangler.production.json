@@ -1,5 +1,5 @@
 {
-  "$comment": "Deploy ke Cloudflare Workers milik sendiri. Jalankan: npm run build lalu npx wrangler deploy --config wrangler.production.json --secrets-file .dev.vars. Data & login ada di Supabase, jadi D1/R2 tidak dipakai.",
+  "$comment": "PENSIUN sejak 9 Okt 2026: website pelaporan pindah ke Vercel (yspi-cerita-pencapaian.vercel.app). Alamat workers.dev dimatikan dan Workers Builds diputus; workers_dev false supaya deploy manual pun tidak menghidupkannya lagi. Dulu: npm run build lalu npx wrangler deploy --config wrangler.production.json --secrets-file .dev.vars.",
   "name": "yspi-pelaporan",
   "main": "dist/server/index.js",
   "compatibility_date": "2026-05-15",
@@ -8,5 +8,6 @@
   "rules": [{ "type": "ESModule", "globs": ["**/*.js", "**/*.mjs"] }],
   "assets": { "directory": "dist/client" },
   "observability": { "enabled": true },
-  "workers_dev": true
+  "workers_dev": false,
+  "preview_urls": false
 }
