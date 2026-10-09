@@ -9,6 +9,9 @@
 !/kewajiban/
 !/wa-pengingat/
 !/yspi-pelaporan/
+# yspi-vercel: website pelaporan guru yang AKTIF (Vercel yspi-cerita-pencapaian).
+# yspi-pelaporan di atas = versi Cloudflare, pensiun sejak 9 Okt 2026.
+!/yspi-vercel/
 !/.github/
 # kewajiban: hanya kode. Isi pesan, nominal, nama penerima, alamat rahasia
 # kalender, dan ID grup tetap lokal.
