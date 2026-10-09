@@ -6,8 +6,9 @@ Website pelaporan guru yang sedang dipakai: https://yspi-cerita-pencapaian.verce
 
 ## Deploy
 
-Sejak 9 Okt 2026 project Vercel tersambung ke repo ini dengan Root Directory
-`yspi-vercel`. Setiap push ke `main` yang mengubah folder ini otomatis
+Sejak 9 Okt 2026 project Vercel tersambung ke repo ini
+(`suluhpranaindonesia-ops/yspi-aplikasi`, lewat GitHub App Vercel di organisasi)
+dengan Root Directory `yspi-vercel`. Setiap push ke `main` yang mengubah folder ini otomatis
 dideploy ke produksi; push yang hanya mengubah folder lain dilewati.
 
 Variabel lingkungan (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
