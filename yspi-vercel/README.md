@@ -11,6 +11,11 @@ Sejak 9 Okt 2026 project Vercel tersambung ke repo ini
 dengan Root Directory `yspi-vercel`. Setiap push ke `main` yang mengubah folder ini otomatis
 dideploy ke produksi; push yang hanya mengubah folder lain dilewati.
 
+Paket Vercel Hobby hanya mau men-deploy commit yang penulisnya akun GitHub
+yang tersambung ke akun Vercel (`suluhpranaindonesia-ops`). Karena itu repo ini
+memakai identitas commit lokal `suluhpranaindonesia-ops` dengan email noreply
+GitHub-nya; commit atas nama akun GitHub lain akan berstatus "Blocked".
+
 Variabel lingkungan (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
 `YSPI_AUTH_MODE`) disimpan di pengaturan project Vercel, bukan di repo.
 
