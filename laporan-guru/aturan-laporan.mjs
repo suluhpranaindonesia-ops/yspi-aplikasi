@@ -8,11 +8,11 @@ export const WAJIB = [['name', 'nama guru'], ['school', 'sekolah'], ['region', '
 
 const kosong = (v) => v === null || v === undefined || String(v).trim() === '';
 // Foto kegiatan tidak wajib.
-// Jejak belajar (#jejak, jenis='jejak'): cukup nama, sekolah, dan isi ATAU foto.
-export const WAJIB_JEJAK = [['name', 'nama guru'], ['school', 'sekolah']];
+// Jejak belajar (#jejak, jenis='jejak'): cukup nama guru, dan yang diminta di pertemuan terakhir ATAU foto.
+export const WAJIB_JEJAK = [['name', 'nama guru']];
 export function kekurangan(report, adaFoto = false) {
   if (report.jenis !== 'jejak') return WAJIB.filter(([k]) => kosong(report[k])).map(([, label]) => label);
   const kurang = WAJIB_JEJAK.filter(([k]) => kosong(report[k])).map(([, label]) => label);
-  if (kosong(report.activity) && !adaFoto) kurang.push('cerita singkat atau foto jejak belajar');
+  if (kosong(report.activity) && !adaFoto) kurang.push('yang diminta di pertemuan terakhir, atau fotonya');
   return kurang;
 }

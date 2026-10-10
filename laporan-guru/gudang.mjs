@@ -45,7 +45,7 @@ export function bukaGudang(folder, log = console.log) {
     const urutSemua = [...g.laporan].sort((a, b) => String(a.date || a.created_at).localeCompare(String(b.date || b.created_at)) || a.created_at.localeCompare(b.created_at));
     // Satu berkas, beda sheet: cerita di "Laporan", jejak belajar (#jejak) di "Jejak Belajar".
     const urut = urutSemua.filter((r) => r.jenis !== 'jejak'), urutJejak = urutSemua.filter((r) => r.jenis === 'jejak');
-    const barisJejak = [['No', 'Tanggal', 'Nama Guru', 'Sekolah', 'Wilayah', 'Jumlah Siswa Ikut', 'Yang Dikerjakan Siswa', 'Hasil / Catatan Guru', 'No. HP', 'Sumber', 'Kelengkapan', 'Status Pemeriksaan', 'Jumlah Foto', 'Folder Foto', 'Pesan Asli', 'Masuk (WIB)', 'Diperbarui (WIB)', 'ID Laporan'],
+    const barisJejak = [['No', 'Tanggal', 'Nama Guru', 'Sekolah', 'Wilayah', 'Jumlah Siswa Ikut', 'Di Pertemuan Terakhir Siswa Diminta', 'Hasilnya / Catatan Guru', 'No. HP', 'Sumber', 'Kelengkapan', 'Status Pemeriksaan', 'Jumlah Foto', 'Folder Foto', 'Pesan Asli', 'Masuk (WIB)', 'Diperbarui (WIB)', 'ID Laporan'],
       ...urutJejak.map((r, i) => {
         const f = mediaDari(r.id);
         return [i + 1, { tanggal: r.date || '' }, r.name, r.school, r.region, r.students ?? '', r.activity, r.impact, r.phone, SUMBER[r.source] || r.source,
@@ -70,7 +70,7 @@ export function bukaGudang(folder, log = console.log) {
       { judul: 'Keterangan', lebar: [26, 90], baris: [
         ['Hal', 'Keterangan'],
         ['Sumber', 'Pesan WhatsApp #cerita / #laporan (teks atau voice note) ke nomor YSPI, diproses penghubung di PC kantor, masuk ke Supabase "Pelaporan Guru YSPI", lalu disalin satu arah ke folder Drive ini tiap 15 menit.'],
-        ['Jejak Belajar', 'Sheet "Jejak Belajar" berisi hasil belajar siswa di rumah yang dibagikan guru lewat #jejak (foto dan/atau cerita singkat). Satu sumber dan satu folder Foto dengan cerita; kolom "Asal" di sheet Foto membedakannya.'],
+        ['Jejak Belajar', 'Sheet "Jejak Belajar" berisi hasil belajar siswa di rumah yang dibagikan guru lewat #jejak: apa yang diminta kepada siswa di pertemuan terakhir, beserta hasil/fotonya. Satu sumber dan satu folder Foto dengan cerita; kolom "Asal" di sheet Foto membedakannya.'],
         ['Diperbarui', wib(new Date().toISOString())],
         ['Jumlah laporan', urut.length],
         ['Jumlah jejak belajar', urutJejak.length],
