@@ -27,7 +27,8 @@ export function bukaGudang(folder, log = console.log) {
   fs.mkdirSync(path.dirname(DATA), { recursive: true });
   let g = { versi: 1, laporan: [], media: [] };
   try { g = JSON.parse(fs.readFileSync(DATA, 'utf8')); } catch (e) { if (e.code !== 'ENOENT') throw e; }
-  let rekapTertunda = !fs.existsSync(path.join(folder, NAMA_XLSX));
+  // Ditulis ulang sekali saat mulai, supaya perubahan susunan sheet langsung terlihat.
+  let rekapTertunda = true;
 
   const simpan = () => {
     fs.writeFileSync(DATA + '.tmp', JSON.stringify(g, null, 1));
@@ -41,7 +42,15 @@ export function bukaGudang(folder, log = console.log) {
   function tulisRekap() {
     if (!rekapTertunda) return true;
     const HEADER = ['No', 'Tanggal', 'Nama Guru', 'Sekolah', 'Wilayah', 'Jumlah Sesi', 'Jumlah Siswa', 'Kegiatan Mengajar', 'Kisah Berdampak', 'Kendala & Kebutuhan', 'Dana Diterima', 'Dana Digunakan', 'Catatan Dana', 'No. HP', 'Sumber', 'Kelengkapan', 'Status Pemeriksaan', 'Status Kendala', 'Jumlah Foto', 'Folder Foto', 'Pesan Asli', 'Masuk (WIB)', 'Diperbarui (WIB)', 'ID Laporan'];
-    const urut = [...g.laporan].sort((a, b) => String(a.date || a.created_at).localeCompare(String(b.date || b.created_at)) || a.created_at.localeCompare(b.created_at));
+    const urutSemua = [...g.laporan].sort((a, b) => String(a.date || a.created_at).localeCompare(String(b.date || b.created_at)) || a.created_at.localeCompare(b.created_at));
+    // Satu berkas, beda sheet: cerita di "Laporan", jejak belajar (#jejak) di "Jejak Belajar".
+    const urut = urutSemua.filter((r) => r.jenis !== 'jejak'), urutJejak = urutSemua.filter((r) => r.jenis === 'jejak');
+    const barisJejak = [['No', 'Tanggal', 'Nama Guru', 'Sekolah', 'Wilayah', 'Jumlah Siswa Ikut', 'Yang Dikerjakan Siswa', 'Hasil / Catatan Guru', 'No. HP', 'Sumber', 'Kelengkapan', 'Status Pemeriksaan', 'Jumlah Foto', 'Folder Foto', 'Pesan Asli', 'Masuk (WIB)', 'Diperbarui (WIB)', 'ID Laporan'],
+      ...urutJejak.map((r, i) => {
+        const f = mediaDari(r.id);
+        return [i + 1, { tanggal: r.date || '' }, r.name, r.school, r.region, r.students ?? '', r.activity, r.impact, r.phone, SUMBER[r.source] || r.source,
+          kelengkapan(r, f.length), r.status_periksa || '', f.length, f.length ? { teks: 'Buka folder', tautan: tautan('Foto/' + r.folder) } : '', r.raw, wib(r.created_at), wib(r.updated_at), r.id];
+      })];
     const barisLaporan = [HEADER, ...urut.map((r, i) => {
       const f = mediaDari(r.id);
       return [i + 1, { tanggal: r.date || '' }, r.name, r.school, r.region, r.sessions ?? '', r.students ?? '', r.activity, r.impact, r.challenge,
@@ -49,19 +58,22 @@ export function bukaGudang(folder, log = console.log) {
         kelengkapan(r, f.length), r.status_periksa || '', r.status_kendala || '', f.length, f.length ? { teks: 'Buka folder', tautan: tautan('Foto/' + r.folder) } : '', r.raw, wib(r.created_at), wib(r.updated_at), r.id];
     })];
     const byId = new Map(g.laporan.map((r) => [r.id, r]));
-    const barisFoto = [['No', 'Tanggal Laporan', 'Nama Guru', 'Sekolah', 'Berkas', 'Jenis', 'Diterima (WIB)', 'ID Laporan'],
+    const barisFoto = [['No', 'Tanggal Laporan', 'Nama Guru', 'Sekolah', 'Berkas', 'Jenis', 'Diterima (WIB)', 'ID Laporan', 'Asal'],
       ...g.media.filter((m) => byId.has(m.report_id)).map((m, i) => {
         const r = byId.get(m.report_id);
-        return [i + 1, { tanggal: r.date || '' }, r.name, r.school, { teks: path.posix.basename(m.file), tautan: tautan(m.file) }, m.type.startsWith('video/') ? 'Video' : 'Foto', wib(m.created_at), r.id];
+        return [i + 1, { tanggal: r.date || '' }, r.name, r.school, { teks: path.posix.basename(m.file), tautan: tautan(m.file) }, m.type.startsWith('video/') ? 'Video' : 'Foto', wib(m.created_at), r.id, r.jenis === 'jejak' ? 'Jejak belajar' : 'Cerita'];
       })];
     const isi = buatXlsx([
       { judul: 'Laporan', lebar: [5, 12, 22, 26, 16, 8, 9, 50, 40, 40, 14, 14, 30, 16, 12, 28, 16, 12, 8, 13, 50, 17, 17, 38], baris: barisLaporan },
-      { judul: 'Foto', lebar: [5, 13, 22, 26, 22, 8, 17, 38], baris: barisFoto },
+      { judul: 'Jejak Belajar', lebar: [5, 12, 22, 26, 16, 10, 50, 40, 16, 12, 28, 16, 8, 13, 50, 17, 17, 38], baris: barisJejak },
+      { judul: 'Foto', lebar: [5, 13, 22, 26, 22, 8, 17, 38, 14], baris: barisFoto },
       { judul: 'Keterangan', lebar: [26, 90], baris: [
         ['Hal', 'Keterangan'],
-        ['Sumber', 'Pesan WhatsApp #laporan (teks atau voice note) ke nomor YSPI, diproses penghubung di PC kantor, masuk ke Supabase "Pelaporan Guru YSPI", lalu disalin satu arah ke folder Drive ini tiap 15 menit.'],
+        ['Sumber', 'Pesan WhatsApp #cerita / #laporan (teks atau voice note) ke nomor YSPI, diproses penghubung di PC kantor, masuk ke Supabase "Pelaporan Guru YSPI", lalu disalin satu arah ke folder Drive ini tiap 15 menit.'],
+        ['Jejak Belajar', 'Sheet "Jejak Belajar" berisi hasil belajar siswa di rumah yang dibagikan guru lewat #jejak (foto dan/atau cerita singkat). Satu sumber dan satu folder Foto dengan cerita; kolom "Asal" di sheet Foto membedakannya.'],
         ['Diperbarui', wib(new Date().toISOString())],
-        ['Jumlah laporan', g.laporan.length],
+        ['Jumlah laporan', urut.length],
+        ['Jumlah jejak belajar', urutJejak.length],
         ['Jumlah foto/video', barisFoto.length - 1],
         ['Penting', 'Berkas ini DITULIS ULANG otomatis setiap datanya berubah. Ubah laporan di website Pelaporan Guru, bukan di sini. Suntingan di sini akan hilang — salin dulu bila ingin mengolah.'],
         ['Isian laporan', 'Kolom nama, sekolah, dll. disarikan model lokal (qwen3:8b) dari pesan guru. Kolom "Pesan Asli" adalah teks guru apa adanya; cocokkan bila ragu.'],
@@ -123,7 +135,7 @@ export function bukaGudang(folder, log = console.log) {
       if (!r) throw new Error('Laporan untuk lampiran tidak ditemukan: ' + report_id);
       // Nama folder ditentukan saat foto pertama tiba (biasanya nama guru sudah terisi),
       // lalu dikunci supaya perubahan isian tidak membuat folder ganda.
-      r.folder ||= bersih(`${r.date || r.created_at.slice(0, 10)} ${r.name || 'Tanpa nama'} - ${r.id.slice(-8)}`).slice(0, 120);
+      r.folder ||= bersih(`${r.jenis === 'jejak' ? 'Jejak ' : ''}${r.date || r.created_at.slice(0, 10)} ${r.name || 'Tanpa nama'} - ${r.id.slice(-8)}`).slice(0, 120);
       const urut = mediaDari(report_id).length + 1;
       const file = `Foto/${r.folder}/${type.startsWith('video/') ? 'video' : 'foto'}-${String(urut).padStart(2, '0')}${EKST[type] || ''}`;
       const tujuan = path.join(folder, ...file.split('/'));
