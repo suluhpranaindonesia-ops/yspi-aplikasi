@@ -56,6 +56,19 @@ export async function supabaseApi(req:Request){try{
    const {id:rid,...changes}=p;if(!Object.keys(changes).length)return json({error:'Tidak ada perubahan.'},400);
    const {data,error}=await db.from('yspi_reports').update(changes).eq('id',rid).select('id');fail(error);return data?.length?json({ok:true}):json({error:'Laporan tidak ditemukan.'},404);
   }
+  // Hapus (mis. data uji sebelum dipakai guru). Hanya admin; salinan Drive tidak ikut terhapus.
+  if(req.method==='DELETE'&&id){
+   if(member.role!=='admin')return json({error:'Hanya admin yang dapat menghapus.'},403);
+   const {data,error}=await db.rpc('yspi_delete_report',{p_id:idSchema.parse(id)});
+   if(error?.code==='P0002')return json({error:'Cerita tidak ditemukan.'},404);
+   if(error?.code==='42501')return json({error:'Hanya admin yang dapat menghapus.'},403);
+   if(error?.code==='PGRST202')return json({error:'Fitur hapus belum diaktifkan di database (migrasi 007).'},503);
+   fail(error);
+   const paths=((data||[]) as unknown[]).filter((p):p is string=>typeof p==='string');
+   // Data sudah terhapus; berkas storage dibersihkan sebisanya (berkas sisa tetap privat).
+   if(paths.length){const {error:removeError}=await db.storage.from('yspi-media').remove(paths);if(removeError)console.error('YSPI media cleanup failed');}
+   return json({ok:true});
+  }
  }
  if(section==='jobs'){
   if(req.method==='POST'){
