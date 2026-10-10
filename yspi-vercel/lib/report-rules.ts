@@ -15,16 +15,16 @@ export function missingFields(report:Record<string,unknown>,hasPhoto?:boolean){
 }
 export const jejakFormat=[
  '#jejak',
- 'Nama: ... (boleh dilewati bila sudah pernah #cerita)',
+ 'Nama: ... (cukup sekali)',
  'Di pertemuan terakhir siswa diminta: ...',
  'Hasilnya: ... (opsional)',
  'Jumlah siswa yang ikut: ... (opsional)',
 ].join('\n');
 export const reportFormat=[
  '#cerita',
- 'Nama: ... (tidak perlu bila sudah #kenalan)',
- 'Sekolah: ... (tidak perlu bila sudah #kenalan)',
- 'Wilayah: ... (tidak perlu bila sudah #kenalan)',
+ 'Nama: ... (cukup sekali)',
+ 'Sekolah: ... (cukup sekali)',
+ 'Wilayah: ... (cukup sekali)',
  'Tanggal: ...',
  'Jumlah sesi: ...',
  'Jumlah siswa: ...',
