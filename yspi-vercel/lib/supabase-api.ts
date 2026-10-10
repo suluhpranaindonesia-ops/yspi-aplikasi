@@ -43,7 +43,9 @@ export async function supabaseApi(req:Request){try{
    return json({reports:(r.data||[]).map(report=>({...report,attachments:media.filter(a=>a.report_id===report.id).map(a=>({id:a.id,name:a.name,type:a.type,url:signed.get(a.path)||null}))})),connection:{...connection,online:!!c.data?.last_seen&&Date.now()-Date.parse(c.data.last_seen)<90000&&c.data.ollama}});
   }
   if(req.method==='POST'){
-   const b=await body(req),report=reportSchema.parse(b);const kurang=missingFields(report,true);if(kurang.length)return json({error:'Lengkapi kolom wajib: '+kurang.join(', ')+'.'},400);
+   const b=await body(req),{jenis,...isi}=reportSchema.parse(b);const kurang=missingFields({...isi,jenis},true);
+   // jenis hanya dikirim untuk jejak, agar cerita tetap tersimpan sebelum migrasi 006 dipasang.
+   const report={...isi,...(jenis==='jejak'?{jenis}:{})};if(kurang.length)return json({error:'Lengkapi kolom wajib: '+kurang.join(', ')+'.'},400);
    const rid=b.id?idSchema.parse(b.id):crypto.randomUUID();
    if(b.id){const {data,error}=await db.from('yspi_reports').update({...report,date:report.date||null}).eq('id',rid).select('id');fail(error);if(!data?.length)return json({error:'Laporan tidak ditemukan.'},404);}
    else{const {error}=await db.from('yspi_reports').insert({id:rid,...report,date:report.date||null,created_by:user.id});fail(error);}
