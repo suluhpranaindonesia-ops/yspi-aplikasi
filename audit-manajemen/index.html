@@ -37,6 +37,10 @@ pre{white-space:pre-wrap;word-break:break-word;background:var(--bg);border-radiu
 summary{cursor:pointer}
 .riwayat{font-size:13px;border-top:1px solid var(--garis);padding:6px 0}
 .kosong{color:var(--redup);padding:30px;text-align:center}
+button.perbaiki{background:var(--ok-bg);color:var(--ok);border-color:var(--ok);font-weight:600}
+button:disabled{opacity:.6;cursor:wait}
+.hasilPerbaikan{margin-top:6px;padding:6px 8px;border-radius:6px;font-size:13px}
+.hasilPerbaikan.ok{background:var(--ok-bg);color:var(--ok)}.hasilPerbaikan.gagal{background:var(--mas-bg);color:var(--mas)}
 @media (max-width:700px){header{position:static}.atas{flex-direction:column}}
 @media print{header button,.saring{display:none}body{background:#fff}.cek{break-inside:avoid}details{display:block}}
 </style>
@@ -46,10 +50,11 @@ summary{cursor:pointer}
   <div class="baris">
     <h1>Audit Management Checker — YSPI</h1>
     <button id="ulang" class="utama">Audit ulang sekarang</button>
+    <button id="semua" class="perbaiki" hidden>🔧 Perbaiki semua</button>
     <button onclick="print()">Cetak</button>
     <span class="redup" id="info">Memuat…</span>
   </div>
-  <div class="redup" style="margin-top:4px">Diperiksa agent secara otomatis — saat kode checker/wiki berubah dan tiap jam. Anda cukup memperbaiki temuan Peringatan/Masalah.</div>
+  <div class="redup" style="margin-top:4px">Diperiksa agent secara otomatis — saat kode checker/wiki berubah dan tiap jam. Temuan web, layanan &amp; data bisa diperbaiki sekali klik (🔧); temuan wiki ditangani manual.</div>
 </header>
 <main>
   <div class="ringkas" id="ringkas"></div>
@@ -69,6 +74,27 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const waktu = (t) => new Date(t).toLocaleString('id-ID');
 let DATA, HASIL = {}, ranahAktif = '';
+const sedang = new Set(), pesan = {};
+const KONFIRMASI = {
+  D6: 'Commit & push SEMUA kode aplikasi yang belum disimpan ke GitHub?\nKalau yspi-vercel ikut berubah, website pelaporan guru langsung di-deploy.',
+  C4: 'Nyalakan ulang Konsol WhatsApp? Bot berhenti sebentar (±20 detik) lalu tersambung lagi.',
+};
+const bisaDiperbaiki = () => DATA.butir.filter((b) => b.perbaikan && HASIL.hasil?.[b.id] && HASIL.hasil[b.id].status !== 'OK');
+
+async function jalankanPerbaikan(id) {
+  const target = id === 'semua' ? bisaDiperbaiki() : DATA.butir.filter((b) => b.id === id);
+  const perlu = target.map((b) => KONFIRMASI[b.id]).filter(Boolean);
+  if (perlu.length && !confirm(perlu.join('\n\n'))) return;
+  sedang.add(id); gambar();
+  try {
+    const { hasil } = await api('/api/perbaiki', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    for (const r of hasil) pesan[r.id] = r;
+    if (!hasil.length) alert('Tidak ada temuan yang bisa diperbaiki otomatis.');
+  } catch (e) { pesan[id] = { ok: false, pesan: e.message }; }
+  sedang.delete(id); gambar();
+  const awal = HASIL.waktu; // tunggu pemeriksaan ulang otomatis selesai
+  for (let i = 0; i < 40; i++) { await new Promise((r) => setTimeout(r, 3000)); await muat(); if (HASIL.waktu !== awal && !DATA.oto.jalan) break; }
+}
 
 async function api(p, opsi) { const r = await fetch(p, opsi); if (!r.ok) throw new Error((await r.json()).galat || r.status); return r.json(); }
 
@@ -97,10 +123,17 @@ function gambar() {
     html += `<div class="cek s-${s}">
       <div class="atas"><div><span class="id">${b.id}</span><b>${esc(b.judul)}</b><div>${esc(r?.ringkas || 'Belum diperiksa.')}</div></div>
         ${s ? `<span class="pil ${s}">${s}</span>` : ''}</div>
-      ${s && s !== 'OK' ? `<div class="saran"><b>Yang perlu Anda perbaiki:</b> ${esc(b.saran)}</div>` : ''}
+      ${s && s !== 'OK' ? (b.perbaikan
+        ? `<div class="baris" style="margin-top:6px"><button class="perbaiki" data-perbaiki="${b.id}" ${sedang.has(b.id) || sedang.has('semua') ? 'disabled' : ''}>🔧 ${sedang.has(b.id) ? 'Memperbaiki…' : esc(b.perbaikan)}</button>
+           <span class="redup">${esc(b.saran)}</span></div>`
+        : `<div class="saran"><b>Perlu ditangani manual:</b> ${esc(b.saran)}</div>`) : ''}
+      ${pesan[b.id] ? `<div class="hasilPerbaikan ${pesan[b.id].ok ? 'ok' : 'gagal'}">${pesan[b.id].ok ? '✓' : '✗'} ${esc(pesan[b.id].pesan)}${pesan[b.id].rinci ? `<pre>${esc(pesan[b.id].rinci)}</pre>` : ''}</div>` : ''}
       ${r?.detail ? `<details${s === 'OK' ? '' : ' open'}><summary class="redup">Rincian</summary><pre>${esc(r.detail)}</pre></details>` : ''}
     </div>`;
   }
+  const n = bisaDiperbaiki().length;
+  $('#semua').hidden = !n; $('#semua').disabled = sedang.size > 0;
+  $('#semua').textContent = sedang.has('semua') ? 'Memperbaiki…' : `🔧 Perbaiki semua (${n})`;
   $('#daftar').innerHTML = html || `<div class="kosong">${fs === 'perlu' ? 'Tidak ada yang perlu diperbaiki. 🎉' : 'Tidak ada pemeriksaan yang cocok.'}</div>`;
 }
 
@@ -116,7 +149,11 @@ async function muat() {
   } catch (e) { $('#info').textContent = 'Gagal memuat: ' + e.message; }
 }
 
-document.addEventListener('click', (e) => { if (e.target.classList.contains('tab')) { ranahAktif = e.target.dataset.r; gambar(); } });
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('tab')) { ranahAktif = e.target.dataset.r; gambar(); }
+  if (e.target.dataset.perbaiki) jalankanPerbaikan(e.target.dataset.perbaiki);
+});
+$('#semua').onclick = () => jalankanPerbaikan('semua');
 $('#saringStatus').onchange = gambar;
 $('#ulang').onclick = async () => {
   try { await api('/api/otomatis/jalan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); $('#info').textContent = 'Audit sedang berjalan…'; }

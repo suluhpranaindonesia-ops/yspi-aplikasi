@@ -39,12 +39,45 @@ const SUMBER = [
 ].map(([nama, berkas, jenis, hitung]) => ({ nama, berkas, jenis, hitung }));
 const DI_DRIVE = (p) => p.startsWith('C:\\Users\\suluh\\My Drive\\') || p.startsWith(VAULT + '\\');
 
+// Cadangan harian wa.db (dibuat perbaiki.mjs; folder ini tersinkron Google Drive, tidak ikut GitHub).
+export const WA_DB = 'C:\\Users\\suluh\\wa-konsol\\data\\wa.db';
+export const CADANGAN_WA = path.join(KERJA, 'cadangan', 'wa-konsol');
+export function cadanganWaTerakhir() {
+  try {
+    return fs.readdirSync(CADANGAN_WA).filter((f) => /^wa-\d{8}-\d{6}\.db$/.test(f))
+      .map((f) => ({ f, t: fs.statSync(path.join(CADANGAN_WA, f)).mtimeMs })).sort((a, b) => b.t - a.t)[0] || null;
+  } catch { return null; }
+}
+
+// Isi yang tidak boleh ikut ter-commit (dipakai pemantau & perbaikan D6).
+export const POLA_RAHASIA = [
+  [/[\w.+-]+@(?!users\.noreply\.github\.com)[\w-]+\.[a-z]{2,}/i, 'alamat email'],
+  [/\b(\+?62|08)\d{8,12}\b/, 'nomor HP'],
+  [/Rp\s?\d/i, 'angka rupiah'],
+  [/(password|sandi|token|secret|api[_-]?key)\s*[:=]\s*['"][^'"\s]{6,}/i, 'sandi/token'],
+];
+
+// Sisa tulis terputus (.tmp dsb.) lebih tua dari 10 menit di folder data aplikasi.
+const AKAR_DATA = [path.join(KERJA, 'keuangan-web', 'data'), path.join(KERJA, 'laporan-guru', 'data'), path.join(KERJA, 'pemantauan-ht', 'data'),
+  path.join(KERJA, 'kewajiban'), AUDIT_DATA, path.join(LAPORAN_GURU, 'data'), 'C:\\Users\\suluh\\wa-konsol\\data'];
+export async function cariTmp() {
+  const temu = [];
+  for (const a of AKAR_DATA) {
+    let nama = []; try { nama = await fsp.readdir(a, { recursive: true }); } catch { continue; }
+    for (const n of nama) {
+      if (!/\.(tmp|part|partial)$|~$/i.test(n) || n.split(path.sep)[0] === 'karantina') continue;
+      try { const st = await fsp.stat(path.join(a, n)); if (Date.now() - st.mtimeMs > 10 * 6e4) temu.push({ p: path.join(a, n), t: st.mtimeMs }); } catch {}
+    }
+  }
+  return temu;
+}
+
 const exec = promisify(execFile);
 const git = async (...a) => (await exec('git', ['-C', KERJA, ...a], { maxBuffer: 20e6, windowsHide: true })).stdout;
 const h = (status, ringkas, detail = '') => ({ status, ringkas, detail });
 const hari = (ms) => (Date.now() - ms) / 864e5;
 const tglLokal = (ms) => new Date(ms).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
-const cekPort = (port) => new Promise((ok) => {
+export const cekPort = (port) => new Promise((ok) => {
   const s = net.connect({ host: '127.0.0.1', port });
   const selesai = (hidup) => { s.destroy(); ok(hidup); };
   s.setTimeout(1500, () => selesai(false));
@@ -309,23 +342,17 @@ const CEK = {
     return masalah.length ? h('Peringatan', `${masalah.length} ketidakcocokan laporan guru.`, masalah.join('\n')) : h('OK', `${s.laporan} laporan, ${foto} foto, rekap mutakhir — cocok.`);
   },
   async D4() {
-    const akar = [path.join(KERJA, 'keuangan-web', 'data'), path.join(KERJA, 'laporan-guru', 'data'), path.join(KERJA, 'pemantauan-ht', 'data'),
-      path.join(KERJA, 'kewajiban'), AUDIT_DATA, path.join(LAPORAN_GURU, 'data'), 'C:\\Users\\suluh\\wa-konsol\\data'];
-    const temu = [];
-    for (const a of akar) {
-      let nama = []; try { nama = await fsp.readdir(a, { recursive: true }); } catch { continue; }
-      for (const n of nama) {
-        if (!/\.(tmp|part|partial)$|~$/i.test(n)) continue;
-        try { const st = await fsp.stat(path.join(a, n)); if (Date.now() - st.mtimeMs > 10 * 6e4) temu.push(`${path.join(a, n)} (${tglLokal(st.mtimeMs)})`); } catch {}
-      }
-    }
+    const temu = (await cariTmp()).map((x) => `${x.p} (${tglLokal(x.t)})`);
     return temu.length ? h('Peringatan', `${temu.length} sisa tulis terputus.`, daftarRinci(temu)) : h('OK', 'Tidak ada sisa tulis terputus.');
   },
   async D5(k) {
-    const tanpa = (await k.sumber()).filter((x) => x.ada && !DI_DRIVE(x.berkas));
-    const rinci = (await k.sumber()).filter((x) => x.ada).map((x) => `${DI_DRIVE(x.berkas) ? '✓ Drive (riwayat versi)' : '✗ TANPA cadangan'} — ${x.nama}`);
+    const cad = cadanganWaTerakhir();
+    const aman = (x) => DI_DRIVE(x.berkas) || (x.berkas === WA_DB && cad && hari(cad.t) <= 26 / 24);
+    const tanpa = (await k.sumber()).filter((x) => x.ada && !aman(x));
+    const rinci = (await k.sumber()).filter((x) => x.ada).map((x) => `${DI_DRIVE(x.berkas) ? '✓ Drive (riwayat versi)'
+      : x.berkas === WA_DB ? (cad ? `${aman(x) ? '✓' : '✗'} cadangan harian terakhir ${tglLokal(cad.t)} (${cad.f})` : '✗ TANPA cadangan') : '✗ TANPA cadangan'} — ${x.nama}`);
     rinci.push('ℹ Database Supabase & Firestore: cadangannya tidak bisa dicek dari PC ini.');
-    return tanpa.length ? h('Peringatan', `${tanpa.length} data penting tanpa cadangan (di luar Google Drive).`, rinci.join('\n')) : h('OK', 'Semua data lokal yang dijaga berada di Google Drive.', rinci.join('\n'));
+    return tanpa.length ? h('Peringatan', `${tanpa.length} data penting tanpa cadangan yang baru (≤ 1 hari).`, rinci.join('\n')) : h('OK', 'Semua data yang dijaga punya cadangan (Drive / cadangan harian).', rinci.join('\n'));
   },
   async D6() {
     const kotor = (await git('status', '--porcelain', '--untracked-files=normal')).split('\n').filter((l) => l && !/ audit-manajemen\//.test(l));

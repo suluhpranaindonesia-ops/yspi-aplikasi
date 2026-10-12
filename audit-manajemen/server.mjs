@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RANAH, STATUS, semuaButir } from './butir.mjs';
 import { jalankanSemua } from './cek.mjs';
+import { PERBAIKI } from './perbaiki.mjs';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.AUDIT_PORT || 3466);
@@ -29,16 +30,19 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1');
   try {
     if (req.method === 'GET' && url.pathname === '/') return kirim(res, 200, fs.readFileSync(path.join(DIR, 'index.html')), 'text/html; charset=utf-8');
-    if (req.method === 'GET' && url.pathname === '/api/butir') return kirim(res, 200, { status: STATUS, ranah: RANAH.map((r) => ({ kode: r.kode, nama: r.nama })), butir: semuaButir() });
+    if (req.method === 'GET' && url.pathname === '/api/butir') return kirim(res, 200, { status: STATUS, ranah: RANAH.map((r) => ({ kode: r.kode, nama: r.nama })), butir: semuaButir().map((b) => ({ ...b, perbaikan: PERBAIKI[b.id]?.label || '' })) });
     if (req.method === 'GET' && url.pathname === '/api/hasil') return kirim(res, 200, fs.existsSync(HASIL) ? fs.readFileSync(HASIL, 'utf8') : '{}');
     // Instans uji: menjalankan semua cek tanpa menyimpan (dipakai otomatis.mjs untuk menguji kode baru)
     if (req.method === 'GET' && url.pathname === '/api/cek' && UJI) return kirim(res, 200, await jalankanSemua({ uji: true }));
     if (req.method === 'GET' && url.pathname === '/api/otomatis') return kirim(res, 200, otomatis ? otomatis.riwayat() : { aktif: false, riwayat: [] });
-    if (req.method === 'POST' && url.pathname === '/api/otomatis/jalan') {
+    if (req.method === 'POST' && (url.pathname === '/api/otomatis/jalan' || url.pathname === '/api/perbaiki')) {
       if (!(req.headers['content-type'] || '').startsWith('application/json')) return kirim(res, 415, { galat: 'Harus JSON' });
       if (!otomatis) return kirim(res, 409, { galat: 'Pemantau tidak aktif di instans ini' });
-      otomatis.jalankan('manual');
-      return kirim(res, 202, { ok: true });
+      if (url.pathname === '/api/otomatis/jalan') { otomatis.jalankan('manual'); return kirim(res, 202, { ok: true }); }
+      let isi = ''; for await (const c of req) { isi += c; if (isi.length > 1000) return kirim(res, 413, { galat: 'Terlalu besar' }); }
+      const { id } = JSON.parse(isi || '{}');
+      if (id !== 'semua' && !PERBAIKI[id]) return kirim(res, 400, { galat: `Tidak ada perbaikan otomatis untuk ${id}` });
+      return kirim(res, 200, { hasil: await otomatis.perbaiki(id) });
     }
     kirim(res, 404, { galat: 'Tidak ditemukan' });
   } catch (e) { kirim(res, 500, { galat: e.message }); }

@@ -17,7 +17,8 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { jalankanSemua, VAULT } from './cek.mjs';
+import { jalankanSemua, VAULT, POLA_RAHASIA, cadanganWaTerakhir } from './cek.mjs';
+import { PERBAIKI, cadangkanWa } from './perbaiki.mjs';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(DIR, '..');
@@ -25,7 +26,7 @@ const DATA = path.join(DIR, 'data');
 const RIWAYAT = path.join(DATA, 'otomatis.json');
 const JEDA = path.join(DATA, 'jeda');
 const PORT_UJI = 3476;
-const BERKAS_SERVER = ['server.mjs', 'cek.mjs', 'otomatis.mjs', 'butir.mjs']; // perubahan di sini perlu mulai ulang
+const BERKAS_SERVER = ['server.mjs', 'cek.mjs', 'otomatis.mjs', 'butir.mjs', 'perbaiki.mjs']; // perubahan di sini perlu mulai ulang
 
 const exec = promisify(execFile);
 const git = async (...a) => (await exec('git', ['-C', ROOT, ...a], { maxBuffer: 20e6, windowsHide: true })).stdout;
@@ -99,12 +100,6 @@ async function ujiKode(langkah) {
 }
 
 // ---------- git ----------
-const POLA_RAHASIA = [
-  [/[\w.+-]+@(?!users\.noreply\.github\.com)[\w-]+\.[a-z]{2,}/i, 'alamat email'],
-  [/\b(\+?62|08)\d{8,12}\b/, 'nomor HP'],
-  [/Rp\s?\d/i, 'angka rupiah'],
-  [/(password|sandi|token|secret|api[_-]?key)\s*[:=]\s*['"][^'"\s]{6,}/i, 'sandi/token'],
-];
 
 async function commitKode(langkah) {
   if ((await git('rev-parse', '--abbrev-ref', 'HEAD')).trim() !== 'main') { langkah('Commit', false, 'Cabang aktif bukan main'); return false; }
@@ -156,6 +151,12 @@ async function audit(pemicu) {
       if (p) catatan.push = p;
     }
 
+    const cad = cadanganWaTerakhir();
+    if (!cad || Date.now() - cad.t > 864e5) {
+      try { const c = await cadangkanWa(); langkah('Cadangan harian wa.db', c.ok, c.pesan); }
+      catch (e) { langkah('Cadangan harian wa.db', false, e.message); }
+    }
+
     // Catat dulu hasil tahap kode supaya pemeriksaan A1 melihat putaran ini (ditandai sedang berjalan)
     tulisJson(RIWAYAT, { riwayat: [{ ...catatan, sedang: true }, ...bacaRiwayat()].slice(0, 200) });
     const { hasil } = await jalankanSemua();
@@ -177,11 +178,37 @@ async function audit(pemicu) {
   if (mulaiUlang) { log('kode server berubah — keluar agar penjaga menyalakan ulang'); setTimeout(() => process.exit(0), 1500); }
 }
 
+// Audit dan perbaikan bergiliran (mis. agar dua git commit tidak berjalan bersamaan).
+let rantai = Promise.resolve();
+function denganKunci(fn) { const p = rantai.then(fn); rantai = p.catch(() => {}); return p; }
+
 export async function jalankan(pemicu) {
   if (st.jalan) { st.antre = pemicu; return; }
   st.jalan = true;
-  try { await audit(pemicu); } finally { st.jalan = false; }
+  try { await denganKunci(() => audit(pemicu)); } finally { st.jalan = false; }
   if (st.antre) { const p = st.antre; st.antre = null; jalankan(p); }
+}
+
+// Perbaikan sekali klik: id pemeriksaan, atau 'semua' = semua temuan non-OK yang punya perbaikan.
+export async function perbaiki(id) {
+  let terakhir = {}; try { terakhir = JSON.parse(fs.readFileSync(path.join(DATA, 'hasil-terakhir.json'), 'utf8')).hasil || {}; } catch {}
+  const daftar = id === 'semua' ? Object.keys(PERBAIKI).filter((k) => terakhir[k] && terakhir[k].status !== 'OK') : [id];
+  if (!daftar.every((k) => PERBAIKI[k])) throw new Error(`Tidak ada perbaikan otomatis untuk ${id}`);
+  const hasil = await denganKunci(async () => {
+    const keluar = [];
+    for (const k of daftar) {
+      let r; try { r = await PERBAIKI[k].jalankan(); } catch (e) { r = { ok: false, pesan: 'Galat: ' + e.message }; }
+      keluar.push({ id: k, label: PERBAIKI[k].label, ...r });
+      log('perbaikan', k, r.ok ? 'OK' : 'GAGAL', r.pesan);
+    }
+    return keluar;
+  });
+  const catatan = { waktu: new Date().toISOString(), pemicu: `perbaikan ${daftar.join(', ') || '(tidak ada yang perlu)'}`,
+    hasil: hasil.every((r) => r.ok) ? 'DIPERBAIKI' : 'PERBAIKAN GAGAL', push: '-',
+    langkah: hasil.map((r) => ({ nama: `${r.id} ${r.label}`, ok: r.ok, ket: r.pesan + (r.rinci ? '\n' + r.rinci : '') })) };
+  tulisJson(RIWAYAT, { riwayat: [catatan, ...bacaRiwayat()].slice(0, 200) });
+  jalankan('pemeriksaan ulang setelah perbaikan');
+  return hasil;
 }
 
 async function putarKode() {
