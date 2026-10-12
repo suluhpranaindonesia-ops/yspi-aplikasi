@@ -123,6 +123,7 @@ export const RANAH = [
         ['state.md vault diperbarui setelah sesi yang mengubah keadaan', 'Tanggal updated: di state.md', 'vault', 'state.md', 'state'],
         ['Data uji ditandai jelas dan tidak terhitung dalam laporan', 'Daftar data uji (mis. 3 data #jejak)', 'vault', 'memori: jejak-belajar'],
         ['Berkas konflik/duplikat Drive dibersihkan', 'Pencarian berkas " 2." / .fuse_hidden', 'vault', 'wiki/_audit/lint-2026-07-20.md'],
+        ['Rujukan wiki di butir audit ini masih menunjuk halaman yang ada', 'Hasil cek otomatis (dijalankan ulang tiap wiki berubah)', 'vault', 'audit-manajemen/butir.mjs', 'rujukan'],
       ]},
     ],
   },

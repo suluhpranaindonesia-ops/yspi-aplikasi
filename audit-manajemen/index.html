@@ -71,6 +71,12 @@ h2{font-size:16px;margin:22px 0 8px;color:var(--aksen)}
   </div>
 </header>
 <main>
+  <details class="angka" id="panelOtomatis" style="margin-bottom:14px">
+    <summary id="ringkasOtomatis">Audit otomatis: memuat…</summary>
+    <div class="baris" style="margin:8px 0"><button id="ulang">Audit ulang sekarang</button>
+      <span class="simpan">Berjalan sendiri bila kode web atau wiki berubah; lolos uji → push ke GitHub.</span></div>
+    <div id="riwayatOtomatis"></div>
+  </details>
   <div class="ringkas" id="ringkas"></div>
   <div class="saring baris">
     <span id="tabRanah" class="baris"></span>
@@ -194,7 +200,26 @@ $('#csv').onclick = () => {
   const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `audit-${sesi.id}.csv` }); a.click();
 };
 
-(async () => { DATA = await api('/api/butir'); await muatDaftarSesi(); })();
+async function muatOtomatis() {
+  try {
+    const o = await api('/api/otomatis');
+    if (!o.aktif) { $('#ringkasOtomatis').textContent = 'Audit otomatis: tidak aktif di instans ini'; return; }
+    const w = (t) => new Date(t).toLocaleString('id-ID');
+    const a = o.riwayat[0];
+    $('#ringkasOtomatis').innerHTML = o.jalan ? 'Audit otomatis: <b>sedang berjalan…</b>'
+      : a ? `Audit otomatis terakhir: <b>${esc(a.hasil)}</b> · ${esc(w(a.waktu))} · ${esc(a.pemicu)} · ${esc(a.push)}` : 'Audit otomatis: belum pernah berjalan';
+    $('#riwayatOtomatis').innerHTML = o.riwayat.slice(0, 10).map((r) => `<div class="otomatis"><b>${esc(w(r.waktu))} — ${esc(r.pemicu)} — ${esc(r.hasil)}</b>
+${r.langkah.map((l) => `${l.ok ? '✓' : '✗'} ${esc(l.nama)}${l.ket ? ': ' + esc(l.ket) : ''}`).join('\n')}
+Push: ${esc(r.push)}</div>`).join('');
+  } catch (e) { $('#ringkasOtomatis').textContent = 'Audit otomatis: gagal memuat (' + e.message + ')'; }
+}
+$('#ulang').onclick = async () => {
+  try { await api('/api/otomatis/jalan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); } catch (e) { alert(e.message); }
+  setTimeout(muatOtomatis, 500);
+};
+setInterval(muatOtomatis, 20000);
+
+(async () => { DATA = await api('/api/butir'); await muatDaftarSesi(); muatOtomatis(); })();
 </script>
 </body>
 </html>
