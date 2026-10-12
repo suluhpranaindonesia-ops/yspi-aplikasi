@@ -13,6 +13,9 @@
 # yspi-pelaporan di atas = versi Cloudflare, pensiun sejak 9 Okt 2026.
 !/yspi-vercel/
 !/.github/
+# audit-manajemen: kode Audit Management Checker; hasil audit (data/) & keluaran/ tetap lokal
+!/audit-manajemen/
+audit-manajemen/keluaran/
 # kewajiban: hanya kode. Isi pesan, nominal, nama penerima, alamat rahasia
 # kalender, dan ID grup tetap lokal.
 kewajiban/hasil/
