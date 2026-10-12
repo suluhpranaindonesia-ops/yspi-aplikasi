@@ -79,7 +79,8 @@ const KONFIRMASI = {
   D6: 'Commit & push SEMUA kode aplikasi yang belum disimpan ke GitHub?\nKalau yspi-vercel ikut berubah, website pelaporan guru langsung di-deploy.',
   C4: 'Nyalakan ulang Konsol WhatsApp? Bot berhenti sebentar (±20 detik) lalu tersambung lagi.',
 };
-const bisaDiperbaiki = () => DATA.butir.filter((b) => b.perbaikan && HASIL.hasil?.[b.id] && HASIL.hasil[b.id].status !== 'OK');
+const adaTombol = (b, r) => b.perbaikan && r && r.status !== 'OK' && r.perbaikan !== false;
+const bisaDiperbaiki = () => DATA.butir.filter((b) => adaTombol(b, HASIL.hasil?.[b.id]));
 
 async function jalankanPerbaikan(id) {
   const target = id === 'semua' ? bisaDiperbaiki() : DATA.butir.filter((b) => b.id === id);
@@ -123,7 +124,7 @@ function gambar() {
     html += `<div class="cek s-${s}">
       <div class="atas"><div><span class="id">${b.id}</span><b>${esc(b.judul)}</b><div>${esc(r?.ringkas || 'Belum diperiksa.')}</div></div>
         ${s ? `<span class="pil ${s}">${s}</span>` : ''}</div>
-      ${s && s !== 'OK' ? (b.perbaikan
+      ${s && s !== 'OK' ? (adaTombol(b, r)
         ? `<div class="baris" style="margin-top:6px"><button class="perbaiki" data-perbaiki="${b.id}" ${sedang.has(b.id) || sedang.has('semua') ? 'disabled' : ''}>🔧 ${sedang.has(b.id) ? 'Memperbaiki…' : esc(b.perbaikan)}</button>
            <span class="redup">${esc(b.saran)}</span></div>`
         : `<div class="saran"><b>Perlu ditangani manual:</b> ${esc(b.saran)}</div>`) : ''}

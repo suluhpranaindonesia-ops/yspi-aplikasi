@@ -192,7 +192,7 @@ export async function jalankan(pemicu) {
 // Perbaikan sekali klik: id pemeriksaan, atau 'semua' = semua temuan non-OK yang punya perbaikan.
 export async function perbaiki(id) {
   let terakhir = {}; try { terakhir = JSON.parse(fs.readFileSync(path.join(DATA, 'hasil-terakhir.json'), 'utf8')).hasil || {}; } catch {}
-  const daftar = id === 'semua' ? Object.keys(PERBAIKI).filter((k) => terakhir[k] && terakhir[k].status !== 'OK') : [id];
+  const daftar = id === 'semua' ? Object.keys(PERBAIKI).filter((k) => terakhir[k] && terakhir[k].status !== 'OK' && terakhir[k].perbaikan !== false) : [id];
   if (!daftar.every((k) => PERBAIKI[k])) throw new Error(`Tidak ada perbaikan otomatis untuk ${id}`);
   const hasil = await denganKunci(async () => {
     const keluar = [];

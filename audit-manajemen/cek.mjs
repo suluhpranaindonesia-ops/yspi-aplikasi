@@ -339,7 +339,10 @@ const CEK = {
     let foto = 0;
     try { for (const n of await fsp.readdir(path.join(LAPORAN_GURU, 'Foto'), { recursive: true })) if (/\.(jpe?g|png|webp|heic|gif|mp4)$/i.test(n)) foto++; } catch {}
     if (typeof s.media === 'number' && foto < s.media) masalah.push(`foto di Drive ${foto}, menurut sinkron ${s.media} — ada foto hilang`);
-    return masalah.length ? h('Peringatan', `${masalah.length} ketidakcocokan laporan guru.`, masalah.join('\n')) : h('OK', `${s.laporan} laporan, ${foto} foto, rekap mutakhir — cocok.`);
+    if (!masalah.length) return h('OK', `${s.laporan} laporan, ${foto} foto, rekap mutakhir — cocok.`);
+    // Penghapusan di Supabase tidak bisa "diperbaiki" dengan sinkron ulang → jangan tawarkan tombol.
+    const bisaSinkron = masalah.some((m) => !m.includes('dihapus di website'));
+    return { ...h('Peringatan', `${masalah.length} ketidakcocokan laporan guru.`, masalah.join('\n')), ...(bisaSinkron ? {} : { perbaikan: false }) };
   },
   async D4() {
     const temu = (await cariTmp()).map((x) => `${x.p} (${tglLokal(x.t)})`);
