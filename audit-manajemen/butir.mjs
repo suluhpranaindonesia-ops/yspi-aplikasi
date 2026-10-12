@@ -28,6 +28,8 @@ export const RANAH = [
     ['C4', 'WhatsApp konsol tersambung', 'Buka Konsol WhatsApp (port 3458) dan sambungkan ulang (QR/kode pairing).'],
     ['C5', 'Sinkron laporan guru sehat', 'Lihat laporan-guru\\data\\sinkron.log dan http://127.0.0.1:3463/status.'],
     ['C6', 'Situs publik (Vercel) bisa dibuka', 'Buka dasbor Vercel proyek terkait; lihat deployment terakhir.'],
+    ['C7', 'Router model lokal sehat & semua aplikasi lewat router', 'Buka http://127.0.0.1:3467: pilih model yang terpasang; aplikasi yang belum lewat router diarahkan ke 127.0.0.1:3467 (lihat llm-router\\README.md).'],
+    ['C8', 'Pintu laporan guru (HTTP & MCP) berfungsi', 'Lihat http://127.0.0.1:3468/status; bila MCP Claude Desktop hilang, jalankan SPI-Kerja\\mcp-desktop\\pasang.cmd lalu tutup Desktop.'],
   ]},
   { kode: 'D', nama: 'Data: hilang, rusak, risiko', cek: [
     ['D1', 'Berkas data utuh & terbaca (JSON, SQLite, XLSX)', 'Berkas rusak: pulihkan dari riwayat versi Drive atau cadangan; jangan biarkan aplikasi menulis di atasnya.'],

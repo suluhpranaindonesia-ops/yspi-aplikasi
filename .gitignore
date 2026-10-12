@@ -16,6 +16,10 @@
 # audit-manajemen: kode Audit Management Checker; hasil audit (data/) & keluaran/ tetap lokal
 !/audit-manajemen/
 audit-manajemen/keluaran/
+# llm-router: router model lokal (port 3467). Log & cadangan router.json ada di data/ (tetap lokal)
+!/llm-router/
+# mcp-desktop: pemasang server MCP ke Claude Desktop (menunggu Desktop ditutup)
+!/mcp-desktop/
 # kewajiban: hanya kode. Isi pesan, nominal, nama penerima, alamat rahasia
 # kalender, dan ID grup tetap lokal.
 kewajiban/hasil/

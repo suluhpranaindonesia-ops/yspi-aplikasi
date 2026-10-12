@@ -245,10 +245,14 @@ export function validateDaily(text,items,kabar={}) {
 // CPU prompt processing. Batas waktu mengikuti BATAS_MENIT: 27B di CPU jauh
 // lebih lambat daripada 8B, jadi batasnya dilonggarkan bersama pergantian model.
 export let BATAS_MENIT=45;
+// Sejak 12 Okt 2026 lewat router model lokal (SPI-Kerja\llm-router): router memilih model
+// per tugas (ringan/sedang/berat) dari prompt sistem. OLLAMA_URL=http://127.0.0.1:11434
+// untuk kembali langsung ke Ollama.
+export const OLLAMA=process.env.OLLAMA_URL||'http://127.0.0.1:3467';
 export function ollamaStream(body) {
   return new Promise((resolve,reject)=>{
     let pending='',response='',result=null;
-    const req=http.request('http://127.0.0.1:11434/api/generate',{method:'POST',headers:{'content-type':'application/json'}},res=>{
+    const req=http.request(OLLAMA+'/api/generate',{method:'POST',headers:{'content-type':'application/json'}},res=>{
       res.setEncoding('utf8');
       if(res.statusCode!==200){let message='';res.on('data',s=>message+=s);res.on('end',()=>fail(Error(`Ollama HTTP ${res.statusCode}: ${message}`)));return;}
       const consume=line=>{if(!line.trim())return;const chunk=JSON.parse(line);if(chunk.error)throw Error(chunk.error);response+=chunk.response||'';if(chunk.done)result=chunk;};
@@ -266,7 +270,7 @@ export function ollamaStream(body) {
 // pernah menjadi isi pesan, jadi cukup non-stream.
 export function ollamaChat(body) {
   return new Promise((resolve,reject)=>{
-    const req=http.request('http://127.0.0.1:11434/api/chat',{method:'POST',headers:{'content-type':'application/json'}},res=>{
+    const req=http.request(OLLAMA+'/api/chat',{method:'POST',headers:{'content-type':'application/json'}},res=>{
       res.setEncoding('utf8');let isi='';
       res.on('data',s=>isi+=s);
       res.on('error',fail);

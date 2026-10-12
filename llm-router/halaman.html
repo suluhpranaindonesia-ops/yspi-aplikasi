@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Router Model Lokal</title>
+<style>
+  :root { --bg:#f7f7f5; --kartu:#fff; --teks:#1f2328; --redup:#656d76; --garis:#d8dee4; --aksen:#0b6e4f; --galat:#b42318; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#16181b; --kartu:#1f2226; --teks:#e6e6e6; --redup:#9aa4ae; --garis:#30363d; --aksen:#3fb68b; --galat:#ff7b72; } }
+  body { margin:0; background:var(--bg); color:var(--teks); font:15px/1.5 system-ui, sans-serif; }
+  main { max-width:960px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:16px; margin:28px 0 8px; }
+  p.redup, .redup { color:var(--redup); }
+  .kartu { background:var(--kartu); border:1px solid var(--garis); border-radius:8px; overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid var(--garis); vertical-align:top; }
+  th { font-size:13px; color:var(--redup); font-weight:600; }
+  tr:last-child td { border-bottom:none; }
+  select { font:inherit; padding:3px 6px; background:var(--kartu); color:var(--teks); border:1px solid var(--garis); border-radius:6px; }
+  .pesan { min-height:22px; margin-top:8px; } .ok { color:var(--aksen); } .galat { color:var(--galat); }
+  code { font-size:13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Router model lokal YSPI</h1>
+  <p class="redup">Pilih model untuk tiap tingkat kerja. Perubahan berlaku pada panggilan berikutnya, tanpa restart. Hanya model Ollama di PC ini.</p>
+  <div id="galatCfg" class="galat"></div>
+
+  <h2>Tingkat</h2>
+  <div class="kartu"><table><thead><tr><th>Tingkat</th><th>Model</th><th>Cadangan</th><th>Untuk</th></tr></thead><tbody id="tingkat"></tbody></table></div>
+
+  <h2>Tugas</h2>
+  <div class="kartu"><table><thead><tr><th>Tugas</th><th>Tingkat</th><th>Model dipakai</th><th>Panggilan</th><th>Rata-rata</th></tr></thead><tbody id="tugas"></tbody></table></div>
+  <div id="pesan" class="pesan"></div>
+
+  <h2>Panggilan lain</h2>
+  <div class="kartu"><table><thead><tr><th>Jalur</th><th>Model</th><th>Panggilan</th><th>Rata-rata</th></tr></thead><tbody id="lain"></tbody></table></div>
+</main>
+<script>
+const TINGKAT = ['ringan', 'sedang', 'berat'];
+const el = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pilihan = (daftar, nilai, data) => `<select ${data}>${[...new Set([nilai, ...daftar])].map((m) => `<option ${m === nilai ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select>`;
+
+async function muat() {
+  const s = await (await fetch('/status')).json();
+  el('galatCfg').textContent = s.galatConfig ? 'router.json bermasalah, versi sah terakhir dipakai: ' + s.galatConfig : '';
+  const c = s.config;
+  el('tingkat').innerHTML = TINGKAT.map((t) => `<tr><td><b>${t}</b></td><td>${pilihan(s.terpasang, c.tingkat[t].model, `data-tingkat="${t}"`)}</td><td><code>${esc(c.tingkat[t].cadangan || '-')}</code></td><td class="redup">${esc(c.tingkat[t].keterangan || '')}</td></tr>`).join('');
+  el('tugas').innerHTML = Object.entries(c.tugas).map(([n, x]) => {
+    const st = s.statistik[n];
+    return `<tr><td><code>${esc(n)}</code></td><td>${pilihan(TINGKAT, x.tingkat, `data-tugas="${esc(n)}"`)}</td><td><code>${esc(x.model || c.tingkat[x.tingkat].model)}</code></td><td>${st ? st.panggilan + (st.gagal ? ` (${st.gagal} gagal)` : '') : 0}</td><td>${st ? st.rataDetik + ' dtk' : '-'}</td></tr>`;
+  }).join('');
+  const lain = Object.entries(s.statistik).filter(([k]) => !c.tugas[k]);
+  el('lain').innerHTML = lain.length ? lain.map(([k, st]) => `<tr><td><code>${esc(k)}</code></td><td><code>${esc(st.model)}</code></td><td>${st.panggilan}</td><td>${st.rataDetik} dtk</td></tr>`).join('') : '<tr><td colspan="4" class="redup">Belum ada.</td></tr>';
+}
+
+document.addEventListener('change', async (e) => {
+  const d = e.target.dataset, body = d.tingkat ? { tingkat: d.tingkat, model: e.target.value } : d.tugas ? { tugas: d.tugas, ubahTingkat: e.target.value } : null;
+  if (!body) return;
+  const r = await fetch('/router/atur', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const j = await r.json();
+  el('pesan').className = 'pesan ' + (r.ok ? 'ok' : 'galat');
+  el('pesan').textContent = r.ok ? 'Tersimpan.' : 'Gagal: ' + j.error;
+  muat();
+});
+muat(); setInterval(muat, 15000);
+</script>
+</body>
+</html>

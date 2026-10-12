@@ -297,6 +297,62 @@ const CEK = {
     return h(gagal.length ? 'Masalah' : 'OK', gagal.length ? `${gagal.length} dari ${hasil.length} situs tidak bisa dibuka.` : `Semua ${hasil.length} situs bisa dibuka.`,
       hasil.map((x) => `${x.ok ? '✓' : '✗'} ${x.u} (${x.ket})`).join('\n'));
   },
+  async C7() {
+    let s; try { s = await (await fetch('http://127.0.0.1:3467/status', { signal: AbortSignal.timeout(5000) })).json(); }
+    catch (e) { return h('Masalah', 'Router model lokal (3467) tidak menjawab — semua aplikasi yang lewat router tidak bisa memanggil model.', e.message); }
+    const masalah = [], peringatan = [], rinci = [];
+    if (s.galatConfig) masalah.push('router.json rusak (versi sah terakhir dipakai): ' + s.galatConfig);
+    for (const [t, x] of Object.entries(s.config.tingkat)) {
+      const ada = s.terpasang.includes(x.model), cad = !x.cadangan || s.terpasang.includes(x.cadangan);
+      rinci.push(`${ada ? '✓' : '✗'} ${t}: ${x.model}${x.cadangan ? ` (cadangan ${x.cadangan}${cad ? '' : ' ✗'})` : ''}`);
+      if (!ada) masalah.push(`model tingkat ${t} (${x.model}) tidak terpasang di Ollama`);
+      if (!cad) peringatan.push(`cadangan tingkat ${t} (${x.cadangan}) tidak terpasang`);
+    }
+    // Aplikasi wajib menunjuk router (keputusan pengguna 12 Okt 2026: semua lewat router).
+    const ROUTER = '127.0.0.1:3467';
+    const isi = (p) => { try { return fs.readFileSync(p, 'utf8'); } catch { return ''; } };
+    const PENGHUBUNG = 'C:\\Users\\suluh\\Documents\\Codex\\2026-09-14\\co\\outputs\\yspi-supabase';
+    const APP = [
+      ['Penghubung laporan guru', isi(path.join(PENGHUBUNG, 'jalan.cmd')).includes('OLLAMA_URL=http://' + ROUTER) && /OLLAMA_URL:process\.env\.OLLAMA_URL/.test(isi(path.join(PENGHUBUNG, 'setup.mjs')))],
+      ['Pemantauan HT', isi(path.join(KERJA, 'pemantauan-ht', 'jalan.cmd')).includes('HT_OLLAMA=http://' + ROUTER)],
+      ['Keuangan', bacaJson(path.join(KERJA, 'keuangan-web', 'config.json'), {}).ollama === 'http://' + ROUTER],
+      ['Laporan pagi & kewajiban (lokal-lengkap)', isi('C:\\Users\\suluh\\wa-konsol\\pengingat\\lokal-lengkap.mjs').includes(`OLLAMA_URL||'http://${ROUTER}'`)],
+    ];
+    for (const [n, ok] of APP) { rinci.push(`${ok ? '✓' : '✗'} ${n} lewat router`); if (!ok) masalah.push(`${n} belum diarahkan ke router`); }
+    // Panggilan 24 jam terakhir: gagal atau terpaksa memakai cadangan.
+    let gagal = 0, cadangan = 0, total = 0;
+    try {
+      const batas = Date.now() - 864e5;
+      for (const b of fs.readFileSync(path.join(KERJA, 'llm-router', 'data', 'router.log'), 'utf8').split('\n')) {
+        if (!b) continue; let r; try { r = JSON.parse(b); } catch { continue; }
+        if (Date.parse(r.waktu) < batas) continue;
+        total++; if (!r.ok) gagal++; if (r.cadangan) cadangan++;
+      }
+    } catch {}
+    rinci.push(`ℹ 24 jam: ${total} panggilan, ${gagal} gagal, ${cadangan} memakai cadangan`);
+    if (gagal) peringatan.push(`${gagal} panggilan model gagal dalam 24 jam`);
+    if (cadangan) peringatan.push(`${cadangan} panggilan terpaksa memakai model cadangan (model utama gagal dimuat?)`);
+    if (masalah.length) return h('Masalah', masalah.join('; ') + '.', rinci.join('\n'));
+    if (peringatan.length) return h('Peringatan', peringatan.join('; ') + '.', rinci.join('\n'));
+    return h('OK', `Router sehat; ${APP.length} aplikasi lewat router; ${total} panggilan 24 jam tanpa gagal.`, rinci.join('\n'));
+  },
+  async C8() {
+    let s; try { s = await (await fetch('http://127.0.0.1:3468/status', { signal: AbortSignal.timeout(8000) })).json(); }
+    catch (e) { return h('Masalah', 'Pintu laporan guru (3468) tidak menjawab.', e.message); }
+    const isi = (p) => { try { return fs.readFileSync(p, 'utf8'); } catch { return ''; } };
+    const MCP = 'laporan-guru/pintu/mcp.mjs';
+    const klien = [
+      ['Claude Code (.mcp.json)', !!bacaJson(path.join(KERJA, '.mcp.json'), {}).mcpServers?.['laporan-guru']],
+      ['Claude Desktop', !!bacaJson(path.join(process.env.APPDATA || 'C:\\Users\\suluh\\AppData\\Roaming', 'Claude', 'claude_desktop_config.json'), {}).mcpServers?.['laporan-guru']],
+      ['DSH', isi('C:\\Users\\suluh\\.dsh\\profiles\\web\\cordis.patch.yml').includes(MCP)],
+      ['Codex', isi('C:\\Users\\suluh\\.codex\\config.toml').includes('[mcp_servers.laporan-guru]')],
+    ];
+    const rinci = [`${s.supabase === 'ok' ? '✓' : '✗'} Supabase: ${s.supabase}`, `ℹ ${s.panggilan} panggilan, ${s.ubahan} ubahan sejak ${tglLokal(Date.parse(s.mulai))}`,
+      ...klien.map(([n, ok]) => `${ok ? '✓' : '✗'} MCP terdaftar di ${n}`)];
+    if (s.supabase !== 'ok') return h('Masalah', 'Pintu laporan guru hidup tapi gagal membaca Supabase.', rinci.join('\n'));
+    const belum = klien.filter(([, ok]) => !ok).map(([n]) => n);
+    return belum.length ? h('Peringatan', `MCP laporan-guru belum terdaftar di: ${belum.join(', ')}.`, rinci.join('\n')) : h('OK', 'Pintu hidup, Supabase terbaca, MCP terdaftar di 4 klien.', rinci.join('\n'));
+  },
 
   async D1(k) {
     const s = await k.sumber();
