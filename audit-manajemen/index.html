@@ -6,220 +6,126 @@
 <title>Audit Management Checker</title>
 <style>
 :root{--bg:#f6f7f8;--kartu:#fff;--teks:#1d2329;--redup:#5f6b76;--garis:#dde2e6;--aksen:#1f4e5f;--aksen2:#e8f0f2;
---ok:#1e7a46;--ok-bg:#e3f4ea;--seb:#9a6400;--seb-bg:#fdf1d8;--blm:#b42318;--blm-bg:#fde7e5;--na:#5f6b76;--na-bg:#eceff1}
+--ok:#1e7a46;--ok-bg:#e3f4ea;--per:#9a6400;--per-bg:#fdf1d8;--mas:#b42318;--mas-bg:#fde7e5}
 @media (prefers-color-scheme:dark){:root{--bg:#14181c;--kartu:#1c2227;--teks:#e6eaed;--redup:#9aa6b0;--garis:#2e363d;--aksen:#7fb8c9;--aksen2:#20323a;
---ok:#6fd39b;--ok-bg:#16301f;--seb:#f0c060;--seb-bg:#33280f;--blm:#ff8f84;--blm-bg:#3a1a17;--na:#9aa6b0;--na-bg:#262d33}}
+--ok:#6fd39b;--ok-bg:#16301f;--per:#f0c060;--per-bg:#33280f;--mas:#ff8f84;--mas-bg:#3a1a17}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--teks);font:15px/1.45 system-ui,"Segoe UI",sans-serif}
 header{background:var(--kartu);border-bottom:1px solid var(--garis);padding:14px 20px;position:sticky;top:0;z-index:5}
 .baris{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 h1{font-size:18px;margin:0 12px 0 0}
-input,select,textarea,button{font:inherit;color:inherit}
-input,select,textarea{background:var(--bg);border:1px solid var(--garis);border-radius:6px;padding:6px 8px}
-textarea{width:100%;min-height:38px;resize:vertical}
-button{background:var(--aksen2);border:1px solid var(--garis);border-radius:6px;padding:6px 12px;cursor:pointer}
+button,select{font:inherit;color:inherit;background:var(--aksen2);border:1px solid var(--garis);border-radius:6px;padding:6px 12px;cursor:pointer}
 button.utama{background:var(--aksen);color:#fff;border-color:var(--aksen)}
 @media (prefers-color-scheme:dark){button.utama{color:#0f1417}}
+.redup{color:var(--redup);font-size:13px}
 main{max-width:1100px;margin:0 auto;padding:16px 20px 60px}
-.ringkas{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.ringkas{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:14px}
 .angka{background:var(--kartu);border:1px solid var(--garis);border-radius:8px;padding:10px 12px}
-.angka b{display:block;font-size:24px}
-.angka small{color:var(--redup)}
-.bar{height:6px;background:var(--garis);border-radius:3px;margin-top:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--aksen)}
+.angka b{display:block;font-size:15px;margin-bottom:4px}
+.pil{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.OK{background:var(--ok-bg);color:var(--ok)}.Peringatan{background:var(--per-bg);color:var(--per)}.Masalah{background:var(--mas-bg);color:var(--mas)}
 .saring{margin:6px 0 14px}
 .tab{background:transparent}.tab.aktif{background:var(--aksen);color:#fff;border-color:var(--aksen)}
 @media (prefers-color-scheme:dark){.tab.aktif{color:#0f1417}}
 h2{font-size:16px;margin:22px 0 8px;color:var(--aksen)}
-.butir{background:var(--kartu);border:1px solid var(--garis);border-radius:8px;padding:12px;margin-bottom:8px}
-.atas{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.cek{background:var(--kartu);border:1px solid var(--garis);border-left-width:4px;border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.cek.s-OK{border-left-color:var(--ok)}.cek.s-Peringatan{border-left-color:var(--per)}.cek.s-Masalah{border-left-color:var(--mas)}
+.atas{display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
 .id{font-weight:600;color:var(--redup);margin-right:6px}
-.ket{color:var(--redup);font-size:13px;margin-top:3px}
-.lencana{font-size:11px;padding:1px 6px;border-radius:9px;border:1px solid var(--garis);margin-left:4px;white-space:nowrap}
-.lencana.umum{background:var(--seb-bg);color:var(--seb);border-color:transparent}
-.status{display:flex;gap:4px;flex-wrap:wrap}
-.status button{padding:4px 9px;font-size:13px;background:transparent}
-.status button.on[data-s=Memenuhi]{background:var(--ok-bg);color:var(--ok);border-color:var(--ok)}
-.status button.on[data-s=Sebagian]{background:var(--seb-bg);color:var(--seb);border-color:var(--seb)}
-.status button.on[data-s=Belum]{background:var(--blm-bg);color:var(--blm);border-color:var(--blm)}
-.status button.on[data-s="N/A"]{background:var(--na-bg);color:var(--na);border-color:var(--na)}
-.isian{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.isian .kecil{display:grid;grid-template-columns:1fr 140px;gap:8px}
-.otomatis{margin-top:8px;padding:8px;border-radius:6px;background:var(--aksen2);font-size:13px;white-space:pre-line}
-.simpan{font-size:13px;color:var(--redup)}
+pre{white-space:pre-wrap;word-break:break-word;background:var(--bg);border-radius:6px;padding:8px;margin:6px 0 0;font:12.5px/1.45 ui-monospace,Consolas,monospace}
+.saran{margin-top:6px;padding:6px 8px;border-radius:6px;background:var(--aksen2);font-size:13px}
+summary{cursor:pointer}
+.riwayat{font-size:13px;border-top:1px solid var(--garis);padding:6px 0}
 .kosong{color:var(--redup);padding:30px;text-align:center}
-@media (max-width:700px){.isian{grid-template-columns:1fr}header{position:static}}
-@media print{header .alat,.saring,.otomatis button{display:none}body{background:#fff}.butir{break-inside:avoid}}
+@media (max-width:700px){header{position:static}.atas{flex-direction:column}}
+@media print{header button,.saring{display:none}body{background:#fff}.cek{break-inside:avoid}details{display:block}}
 </style>
 </head>
 <body>
 <header>
   <div class="baris">
     <h1>Audit Management Checker — YSPI</h1>
-    <select id="pilihSesi" aria-label="Pilih sesi audit"></select>
-    <span class="alat baris">
-      <button id="baru">Audit baru</button>
-      <button id="cek" class="utama">Jalankan cek sistem</button>
-      <button id="csv">Ekspor CSV</button>
-      <button onclick="print()">Cetak</button>
-    </span>
-    <span class="simpan" id="infoSimpan"></span>
+    <button id="ulang" class="utama">Audit ulang sekarang</button>
+    <button onclick="print()">Cetak</button>
+    <span class="redup" id="info">Memuat…</span>
   </div>
-  <div class="baris" style="margin-top:8px">
-    <input id="judul" placeholder="Judul audit" style="flex:2;min-width:180px">
-    <input id="pemeriksa" placeholder="Pemeriksa" style="flex:1;min-width:140px">
-    <input id="periode" placeholder="Periode (mis. Q4 2026)" style="flex:1;min-width:140px">
-  </div>
+  <div class="redup" style="margin-top:4px">Diperiksa agent secara otomatis — saat kode checker/wiki berubah dan tiap jam. Anda cukup memperbaiki temuan Peringatan/Masalah.</div>
 </header>
 <main>
-  <details class="angka" id="panelOtomatis" style="margin-bottom:14px">
-    <summary id="ringkasOtomatis">Audit otomatis: memuat…</summary>
-    <div class="baris" style="margin:8px 0"><button id="ulang">Audit ulang sekarang</button>
-      <span class="simpan">Berjalan sendiri bila kode web atau wiki berubah; lolos uji → push ke GitHub.</span></div>
-    <div id="riwayatOtomatis"></div>
-  </details>
   <div class="ringkas" id="ringkas"></div>
   <div class="saring baris">
     <span id="tabRanah" class="baris"></span>
     <select id="saringStatus" aria-label="Saring status">
-      <option value="">Semua status</option><option value="kosong">Belum diisi</option>
-      <option value="Belum">Belum</option><option value="Sebagian">Sebagian</option><option value="Memenuhi">Memenuhi</option><option value="N/A">N/A</option>
+      <option value="perlu">Perlu diperbaiki</option><option value="">Semua</option>
+      <option value="Masalah">Masalah</option><option value="Peringatan">Peringatan</option><option value="OK">OK</option>
     </select>
-    <input id="cari" placeholder="Cari kriteria…" style="flex:1;min-width:160px">
   </div>
   <div id="daftar"></div>
+  <h2>Riwayat audit otomatis</h2>
+  <div id="riwayat"></div>
 </main>
 <script>
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-let DATA, sesi, cek = {}, ranahAktif = '', tunda;
-const NILAI = { Memenuhi: 2, Sebagian: 1, Belum: 0 };
+const waktu = (t) => new Date(t).toLocaleString('id-ID');
+let DATA, HASIL = {}, ranahAktif = '';
 
 async function api(p, opsi) { const r = await fetch(p, opsi); if (!r.ok) throw new Error((await r.json()).galat || r.status); return r.json(); }
-const idBaru = () => new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
 
-async function muatDaftarSesi(pilih) {
-  const daftar = await api('/api/sesi');
-  if (!daftar.length) { await sesiBaru(); return; }
-  $('#pilihSesi').innerHTML = daftar.map((s) => `<option value="${esc(s.id)}">${esc(s.judul || s.id)} — ${s.terisi}/${DATA.butir.length}</option>`).join('');
-  const id = pilih || daftar[0].id; $('#pilihSesi').value = id; await bukaSesi(id);
+function hitung(saring) {
+  const n = { OK: 0, Peringatan: 0, Masalah: 0, belum: 0 };
+  for (const b of DATA.butir.filter(saring)) { const s = HASIL.hasil?.[b.id]?.status; s ? n[s]++ : n.belum++; }
+  return n;
 }
-async function bukaSesi(id) {
-  sesi = await api('/api/sesi/' + id);
-  for (const k of ['judul', 'pemeriksa', 'periode']) $('#' + k).value = sesi[k] || '';
-  gambar();
-}
-async function sesiBaru() {
-  const id = idBaru();
-  sesi = { id, judul: 'Audit ' + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }), pemeriksa: '', periode: '', jawaban: {} };
-  await simpanSekarang(); await muatDaftarSesi(id);
-}
-function jawab(id) { return sesi.jawaban[id] ||= {}; }
-function simpan() { $('#infoSimpan').textContent = 'Menyimpan…'; clearTimeout(tunda); tunda = setTimeout(simpanSekarang, 600); }
-async function simpanSekarang() {
-  try {
-    const r = await api('/api/sesi/' + sesi.id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sesi) });
-    $('#infoSimpan').textContent = 'Tersimpan ' + new Date(r.diubah).toLocaleTimeString('id-ID');
-  } catch (e) { $('#infoSimpan').textContent = 'GAGAL menyimpan: ' + e.message; }
-}
-
-function skor(saring) {
-  let s = 0, m = 0, n = 0, isi = 0, blm = 0;
-  for (const b of DATA.butir.filter(saring)) {
-    n++; const st = sesi.jawaban[b.id]?.status;
-    if (st) isi++;
-    if (st === 'Belum') blm++;
-    if (st in NILAI) { s += NILAI[st]; m += 2; }
-  }
-  return { s, m, n, isi, blm, pct: m ? Math.round((s / m) * 100) : null };
-}
-const kategori = (p) => p === null ? '—' : p >= 80 ? 'Baik' : p >= 60 ? 'Perlu perbaikan' : 'Prioritas';
-
-function gambarRingkas() {
-  const kartu = [{ nama: 'Total', ...skor(() => true) }, ...DATA.ranah.map((r) => ({ nama: r.nama, ...skor((b) => b.ranah === r.nama) }))];
-  $('#ringkas').innerHTML = kartu.map((k) => `<div class="angka"><small>${esc(k.nama)}</small>
-    <b>${k.pct === null ? '—' : k.pct + '%'}</b><small>${kategori(k.pct)} · terisi ${k.isi}/${k.n} · Belum ${k.blm}</small>
-    <div class="bar"><i style="width:${k.pct ?? 0}%"></i></div></div>`).join('');
+function pilHitung(n) {
+  return ['Masalah', 'Peringatan', 'OK'].filter((s) => n[s]).map((s) => `<span class="pil ${s}">${n[s]} ${s}</span>`).join(' ') || '<span class="redup">belum diperiksa</span>';
 }
 
 function gambar() {
-  gambarRingkas();
+  $('#ringkas').innerHTML = [{ nama: 'Semua', f: () => true }, ...DATA.ranah.map((r) => ({ nama: r.nama, f: (b) => b.ranah === r.nama }))]
+    .map((k) => `<div class="angka"><b>${esc(k.nama)}</b>${pilHitung(hitung(k.f))}</div>`).join('');
   $('#tabRanah').innerHTML = [['', 'Semua'], ...DATA.ranah.map((r) => [r.nama, r.nama])]
     .map(([v, t]) => `<button class="tab ${v === ranahAktif ? 'aktif' : ''}" data-r="${esc(v)}">${esc(t)}</button>`).join('');
-  const fs = $('#saringStatus').value, q = $('#cari').value.toLowerCase();
-  const tampil = DATA.butir.filter((b) => {
-    const st = sesi.jawaban[b.id]?.status || '';
-    if (ranahAktif && b.ranah !== ranahAktif) return false;
-    if (fs === 'kosong' ? st : fs && st !== fs) return false;
-    return !q || (b.kriteria + ' ' + b.bukti + ' ' + b.id).toLowerCase().includes(q);
-  });
-  let html = '', bagian = '';
-  for (const b of tampil) {
-    if (b.bagian !== bagian) { bagian = b.bagian; const k = skor((x) => x.bagian === bagian); html += `<h2>${esc(bagian)} <span class="simpan">${k.pct === null ? '' : k.pct + '% · ' + kategori(k.pct)}</span></h2>`; }
-    const j = sesi.jawaban[b.id] || {}, c = b.cek && cek[b.cek];
-    html += `<div class="butir" data-id="${b.id}">
-      <div class="atas"><div><span class="id">${b.id}</span>${esc(b.kriteria)}
-        <span class="lencana ${b.dasar}">${b.dasar === 'umum' ? 'praktik umum' : 'vault'}</span>${b.cek ? '<span class="lencana">cek otomatis</span>' : ''}
-        <div class="ket">Bukti: ${esc(b.bukti)}${b.rujukan ? ' · Rujukan: ' + esc(b.rujukan) : ''}</div></div>
-        <div class="status">${DATA.skala.map((s) => `<button data-s="${s.kode}" class="${j.status === s.kode ? 'on' : ''}">${s.kode}</button>`).join('')}</div></div>
-      ${c ? `<div class="otomatis"><b>Hasil cek: ${c.status}</b>\n${esc(c.bukti)}\n<button data-pakai="${b.cek}">Pakai hasil cek</button></div>` : ''}
-      <div class="isian"><textarea data-k="buktiDilihat" placeholder="Bukti yang dilihat">${esc(j.buktiDilihat)}</textarea>
-        <div><textarea data-k="tindak" placeholder="Tindak lanjut">${esc(j.tindak)}</textarea>
-        <div class="kecil" style="margin-top:6px"><input data-k="pic" placeholder="PIC" value="${esc(j.pic)}"><input type="date" data-k="tenggat" value="${esc(j.tenggat)}"></div></div></div>
+  const fs = $('#saringStatus').value;
+  let html = '', ranah = '';
+  for (const b of DATA.butir) {
+    const r = HASIL.hasil?.[b.id];
+    if (ranahAktif && b.ranah !== ranahAktif) continue;
+    if (fs === 'perlu' ? r?.status === 'OK' : fs && r?.status !== fs) continue;
+    if (b.ranah !== ranah) { ranah = b.ranah; html += `<h2>${esc(ranah)}</h2>`; }
+    const s = r?.status || '';
+    html += `<div class="cek s-${s}">
+      <div class="atas"><div><span class="id">${b.id}</span><b>${esc(b.judul)}</b><div>${esc(r?.ringkas || 'Belum diperiksa.')}</div></div>
+        ${s ? `<span class="pil ${s}">${s}</span>` : ''}</div>
+      ${s && s !== 'OK' ? `<div class="saran"><b>Yang perlu Anda perbaiki:</b> ${esc(b.saran)}</div>` : ''}
+      ${r?.detail ? `<details${s === 'OK' ? '' : ' open'}><summary class="redup">Rincian</summary><pre>${esc(r.detail)}</pre></details>` : ''}
     </div>`;
   }
-  $('#daftar').innerHTML = html || '<div class="kosong">Tidak ada butir yang cocok.</div>';
+  $('#daftar').innerHTML = html || `<div class="kosong">${fs === 'perlu' ? 'Tidak ada yang perlu diperbaiki. 🎉' : 'Tidak ada pemeriksaan yang cocok.'}</div>`;
 }
 
-document.addEventListener('click', (e) => {
-  const t = e.target;
-  if (t.dataset.r !== undefined && t.classList.contains('tab')) { ranahAktif = t.dataset.r; gambar(); return; }
-  const kotak = t.closest('.butir'); if (!kotak) return;
-  const j = jawab(kotak.dataset.id);
-  if (t.dataset.s) { j.status = j.status === t.dataset.s ? '' : t.dataset.s; simpan(); gambar(); }
-  if (t.dataset.pakai) { const c = cek[t.dataset.pakai]; j.status = c.status; j.buktiDilihat = `[Cek otomatis ${new Date().toLocaleString('id-ID')}]\n${c.bukti}`; simpan(); gambar(); }
-});
-document.addEventListener('input', (e) => {
-  const k = e.target.dataset.k, kotak = e.target.closest('.butir');
-  if (k && kotak) { jawab(kotak.dataset.id)[k] = e.target.value; simpan(); }
-});
-for (const k of ['judul', 'pemeriksa', 'periode']) $('#' + k).addEventListener('input', (e) => { sesi[k] = e.target.value; simpan(); });
-$('#saringStatus').onchange = gambar; $('#cari').oninput = gambar;
-$('#pilihSesi').onchange = (e) => bukaSesi(e.target.value);
-$('#baru').onclick = sesiBaru;
-$('#cek').onclick = async () => {
-  $('#cek').disabled = true; $('#cek').textContent = 'Memeriksa…';
-  try { cek = (await api('/api/cek')).hasil; ranahAktif = 'Sistem & Data'; gambar(); }
-  catch (e) { alert('Cek gagal: ' + e.message); }
-  $('#cek').disabled = false; $('#cek').textContent = 'Jalankan cek sistem';
-};
-$('#csv').onclick = () => {
-  const q = (v) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-  const kepala = ['ID', 'Ranah', 'Bagian', 'Kriteria', 'Dasar', 'Status', 'Nilai', 'Bukti dilihat', 'Tindak lanjut', 'PIC', 'Tenggat'];
-  const baris = DATA.butir.map((b) => { const j = sesi.jawaban[b.id] || {}; return [b.id, b.ranah, b.bagian, b.kriteria, b.dasar, j.status, NILAI[j.status] ?? '', j.buktiDilihat, j.tindak, j.pic, j.tenggat]; });
-  const blob = new Blob(['﻿' + [kepala, ...baris].map((r) => r.map(q).join(';')).join('\r\n')], { type: 'text/csv' });
-  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `audit-${sesi.id}.csv` }); a.click();
-};
-
-async function muatOtomatis() {
+async function muat() {
   try {
-    const o = await api('/api/otomatis');
-    if (!o.aktif) { $('#ringkasOtomatis').textContent = 'Audit otomatis: tidak aktif di instans ini'; return; }
-    const w = (t) => new Date(t).toLocaleString('id-ID');
-    const a = o.riwayat[0];
-    $('#ringkasOtomatis').innerHTML = o.jalan ? 'Audit otomatis: <b>sedang berjalan…</b>'
-      : a ? `Audit otomatis terakhir: <b>${esc(a.hasil)}</b> · ${esc(w(a.waktu))} · ${esc(a.pemicu)} · ${esc(a.push)}` : 'Audit otomatis: belum pernah berjalan';
-    $('#riwayatOtomatis').innerHTML = o.riwayat.slice(0, 10).map((r) => `<div class="otomatis"><b>${esc(w(r.waktu))} — ${esc(r.pemicu)} — ${esc(r.hasil)}</b>
-${r.langkah.map((l) => `${l.ok ? '✓' : '✗'} ${esc(l.nama)}${l.ket ? ': ' + esc(l.ket) : ''}`).join('\n')}
-Push: ${esc(r.push)}</div>`).join('');
-  } catch (e) { $('#ringkasOtomatis').textContent = 'Audit otomatis: gagal memuat (' + e.message + ')'; }
+    [HASIL, DATA.oto] = await Promise.all([api('/api/hasil'), api('/api/otomatis')]);
+    const o = DATA.oto;
+    $('#info').textContent = (o.jalan ? 'Audit sedang berjalan… · ' : '') + (o.jeda ? 'Push otomatis DIJEDA · ' : '') +
+      (HASIL.waktu ? `Diperiksa ${waktu(HASIL.waktu)} (${Math.round(HASIL.durasiMs / 100) / 10} dtk)` : 'Belum pernah diperiksa');
+    $('#riwayat').innerHTML = o.riwayat.slice(0, 15).map((r) => `<details class="riwayat"><summary>${esc(waktu(r.waktu))} — ${esc(r.pemicu)} — <b>${esc(r.hasil)}</b> · ${esc(r.push)}</summary>
+<pre>${r.langkah.map((l) => `${l.ok ? '✓' : '✗'} ${esc(l.nama)}${l.ket ? ': ' + esc(l.ket) : ''}`).join('\n')}</pre></details>`).join('') || '<div class="redup">Belum ada.</div>';
+    gambar();
+  } catch (e) { $('#info').textContent = 'Gagal memuat: ' + e.message; }
 }
-$('#ulang').onclick = async () => {
-  try { await api('/api/otomatis/jalan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); } catch (e) { alert(e.message); }
-  setTimeout(muatOtomatis, 500);
-};
-setInterval(muatOtomatis, 20000);
 
-(async () => { DATA = await api('/api/butir'); await muatDaftarSesi(); muatOtomatis(); })();
+document.addEventListener('click', (e) => { if (e.target.classList.contains('tab')) { ranahAktif = e.target.dataset.r; gambar(); } });
+$('#saringStatus').onchange = gambar;
+$('#ulang').onclick = async () => {
+  try { await api('/api/otomatis/jalan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); $('#info').textContent = 'Audit sedang berjalan…'; }
+  catch (e) { alert(e.message); }
+  const awal = HASIL.waktu;
+  for (let i = 0; i < 40; i++) { await new Promise((r) => setTimeout(r, 3000)); await muat(); if (HASIL.waktu !== awal && !DATA.oto.jalan) break; }
+};
+setInterval(muat, 30000);
+(async () => { DATA = await api('/api/butir'); await muat(); })();
 </script>
 </body>
 </html>

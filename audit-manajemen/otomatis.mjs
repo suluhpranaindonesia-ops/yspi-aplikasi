@@ -1,12 +1,14 @@
 // Pemantau otomatis Audit Management Checker (berjalan di dalam server.mjs).
 //
-// - Kode audit-manajemen/ berubah (git status, dicek tiap 1 menit, tunggu stabil 1 putaran):
-//   uji sintaks → bangun md/xlsx → server uji di port 3476 → bila lolos: commit + push,
-//   lalu server keluar supaya penjaga menyalakannya ulang dengan kode baru.
-// - Wiki vault berubah (dicek tiap 5 menit, tunggu stabil 1 putaran):
-//   cek sistem + rujukan wiki dijalankan ulang, hasilnya masuk sesi "Audit otomatis".
-// Riwayat: data\otomatis.json. Tidak pernah push bila ada commit lain di luar
-// audit-manajemen/ yang belum di-push (push yspi-vercel/ = deploy website).
+// Pemicu audit ulang:
+// - Kode audit-manajemen/ berubah (git status, tiap 1 menit, tunggu stabil 1 putaran):
+//   uji sintaks → bangun laporan → server uji di port 3476 (semua cek harus jalan tanpa error)
+//   → bila lolos: commit + push, lalu server keluar supaya penjaga menyalakannya ulang.
+// - Wiki vault berubah (tiap 5 menit, tunggu stabil 1 putaran).
+// - Terjadwal tiap 1 jam, dan tombol "Audit ulang sekarang" di web.
+// Berkas data\jeda = jangan commit/push otomatis (untuk menyunting berlama-lama).
+// Tidak pernah push bila ada commit lain di luar audit-manajemen/ yang belum di-push
+// (push yspi-vercel/ = deploy website). Riwayat: data\otomatis.json.
 
 import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -15,14 +17,13 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cekSistem, VAULT } from './cek.mjs';
-import { semuaButir } from './butir.mjs';
+import { jalankanSemua, VAULT } from './cek.mjs';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(DIR, '..');
 const DATA = path.join(DIR, 'data');
 const RIWAYAT = path.join(DATA, 'otomatis.json');
-const SESI = path.join(DATA, 'audit-otomatis.json');
+const JEDA = path.join(DATA, 'jeda');
 const PORT_UJI = 3476;
 const BERKAS_SERVER = ['server.mjs', 'cek.mjs', 'otomatis.mjs', 'butir.mjs']; // perubahan di sini perlu mulai ulang
 
@@ -54,22 +55,10 @@ async function tandaWiki() {
   return hash(bag.join('\n'));
 }
 
-// ---------- penyimpanan ----------
+// ---------- riwayat ----------
 function tulisJson(berkas, isi) { fs.writeFileSync(berkas + '.tmp', JSON.stringify(isi, null, 1)); fs.renameSync(berkas + '.tmp', berkas); }
 function bacaRiwayat() { try { return JSON.parse(fs.readFileSync(RIWAYAT, 'utf8')).riwayat || []; } catch { return []; } }
-export function riwayat() { return { aktif: true, jalan: st.jalan, riwayat: bacaRiwayat().slice(0, 30) }; }
-
-function simpanSesiOtomatis(hasil) {
-  let s;
-  try { s = JSON.parse(fs.readFileSync(SESI, 'utf8')); }
-  catch { s = { id: 'otomatis', judul: 'Audit otomatis (diperbarui sendiri)', pemeriksa: 'Pemantau audit-manajemen', periode: 'berjalan', jawaban: {} }; }
-  const cap = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
-  for (const b of semuaButir()) {
-    if (b.cek && hasil[b.cek]) s.jawaban[b.id] = { ...(s.jawaban[b.id] || {}), status: hasil[b.cek].status, buktiDilihat: `[Otomatis ${cap}]\n${hasil[b.cek].bukti}` };
-  }
-  s.diubah = new Date().toISOString();
-  tulisJson(SESI, s);
-}
+export function riwayat() { return { aktif: true, jalan: st.jalan, jeda: fs.existsSync(JEDA), riwayat: bacaRiwayat().slice(0, 30) }; }
 
 // ---------- uji kode ----------
 const tunggu = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -79,8 +68,6 @@ async function ujiKode(langkah) {
     catch (e) { langkah('Sintaks ' + f, false, (e.stderr || e.message).slice(0, 600)); return false; }
   }
   langkah('Sintaks semua .mjs', true);
-  try { await exec(process.execPath, ['bangun.mjs'], { cwd: DIR, timeout: 60000, windowsHide: true }); langkah('Bangun md/xlsx', true); }
-  catch (e) { langkah('Bangun md/xlsx', false, (e.stderr || e.message).slice(0, 600)); return false; }
 
   const anak = spawn(process.execPath, ['server.mjs'], { cwd: DIR, env: { ...process.env, AUDIT_PORT: String(PORT_UJI), AUDIT_UJI: '1' }, windowsHide: true, stdio: 'ignore' });
   const dasar = `http://127.0.0.1:${PORT_UJI}`;
@@ -90,22 +77,25 @@ async function ujiKode(langkah) {
     if (!hidup) { langkah('Server uji', false, `Port ${PORT_UJI} tidak menjawab dalam 10 detik`); return false; }
     const halaman = await (await fetch(dasar + '/')).text();
     if (!halaman.includes('<title>Audit Management Checker</title>')) { langkah('Halaman web', false, 'Judul halaman tidak ditemukan'); return false; }
-    const { butir } = await (await fetch(dasar + '/api/butir')).json();
-    const { hasil } = await (await fetch(dasar + '/api/cek')).json();
+    const { butir, status } = await (await fetch(dasar + '/api/butir')).json();
+    const { hasil } = await (await fetch(dasar + '/api/cek', { signal: AbortSignal.timeout(60000) })).json();
     const masalah = [];
-    if (!butir.length) masalah.push('daftar butir kosong');
-    const id = butir.map((b) => b.id);
-    if (new Set(id).size !== id.length) masalah.push('ID butir ganda');
+    if (!butir.length) masalah.push('daftar pemeriksaan kosong');
+    if (new Set(butir.map((b) => b.id)).size !== butir.length) masalah.push('ID pemeriksaan ganda');
     for (const b of butir) {
-      if (!b.kriteria) masalah.push(`${b.id} tanpa kriteria`);
-      if (!['vault', 'umum'].includes(b.dasar)) masalah.push(`${b.id} dasar "${b.dasar}" tidak sah`);
-      if (b.cek && !hasil?.[b.cek]) masalah.push(`${b.id} memakai cek "${b.cek}" yang tidak ada`);
+      const r = hasil?.[b.id];
+      if (!r) masalah.push(`${b.id} tidak menghasilkan apa pun`);
+      else if (r.errorChecker) masalah.push(`${b.id} error: ${r.ringkas}`);
+      else if (!status.includes(r.status)) masalah.push(`${b.id} status tidak sah "${r.status}"`);
     }
-    if (masalah.length) { langkah('Isi butir', false, masalah.slice(0, 10).join('; ')); return false; }
-    langkah('Server uji (halaman, butir, cek)', true, `${butir.length} butir`);
-    return true;
+    if (masalah.length) { langkah('Semua pemeriksaan berjalan', false, masalah.slice(0, 10).join('; ')); return false; }
+    langkah('Server uji (halaman + semua pemeriksaan)', true, `${butir.length} pemeriksaan berjalan tanpa error`);
   } catch (e) { langkah('Server uji', false, e.message); return false; }
   finally { anak.kill(); }
+
+  try { await exec(process.execPath, ['bangun.mjs'], { cwd: DIR, timeout: 60000, windowsHide: true }); langkah('Bangun laporan md/xlsx', true); }
+  catch (e) { langkah('Bangun laporan md/xlsx', false, (e.stderr || e.message).slice(0, 600)); return false; }
+  return true;
 }
 
 // ---------- git ----------
@@ -126,7 +116,7 @@ async function commitKode(langkah) {
   }
   const berkas = (await git('diff', '--cached', '--name-only', '--', 'audit-manajemen')).trim().split('\n').filter(Boolean);
   if (!berkas.length) return true;
-  await git('commit', '-q', '-m', `audit-manajemen: pembaruan otomatis (lolos uji)\n\nBerkas: ${berkas.join(', ')}\nDibuat pemantau audit-manajemen setelah uji sintaks, bangun md/xlsx, dan server uji.`, '--', 'audit-manajemen');
+  await git('commit', '-q', '-m', `audit-manajemen: pembaruan otomatis (lolos uji)\n\nBerkas: ${berkas.join(', ')}\nDibuat pemantau audit-manajemen setelah uji sintaks, server uji, dan bangun laporan.`, '--', 'audit-manajemen');
   langkah('Commit', true, (await git('log', '--oneline', '-1')).trim());
   return berkas;
 }
@@ -148,13 +138,9 @@ async function audit(pemicu) {
   const langkah = (nama, ok, ket = '') => catatan.langkah.push({ nama, ok, ket });
   let mulaiUlang = false;
   try {
-    const { hasil } = await cekSistem();
-    simpanSesiOtomatis(hasil);
-    langkah('Cek sistem → sesi "Audit otomatis"', true, Object.entries(hasil).map(([k, v]) => `${k}: ${v.status}`).join(' · '));
-    if (hasil.rujukan?.status !== 'Memenuhi') { langkah('Rujukan wiki', false, hasil.rujukan?.bukti || ''); catatan.hasil = 'PERINGATAN'; }
-
     const tanda = await tandaKode();
-    if (tanda) {
+    if (tanda && fs.existsSync(JEDA)) langkah('Uji & push kode', true, 'Dilewati: data\\jeda ada (penyuntingan sedang berlangsung)');
+    else if (tanda) {
       const lolos = await ujiKode(langkah);
       if (!lolos) { catatan.hasil = 'GAGAL'; catatan.push = 'Tidak di-push: uji gagal'; st.kode.gagal = tanda; }
       else {
@@ -165,13 +151,28 @@ async function audit(pemicu) {
           mulaiUlang = Array.isArray(berkas) && berkas.some((b) => BERKAS_SERVER.includes(path.basename(b)));
         }
       }
-    } else {
+    } else if (!fs.existsSync(JEDA)) {
       const p = await cobaPush();
       if (p) catatan.push = p;
     }
+
+    // Catat dulu hasil tahap kode supaya pemeriksaan A1 melihat putaran ini (ditandai sedang berjalan)
+    tulisJson(RIWAYAT, { riwayat: [{ ...catatan, sedang: true }, ...bacaRiwayat()].slice(0, 200) });
+    const { hasil } = await jalankanSemua();
+    const hitung = { OK: 0, Peringatan: 0, Masalah: 0 };
+    for (const r of Object.values(hasil)) hitung[r.status]++;
+    const error = Object.entries(hasil).filter(([, r]) => r.errorChecker).map(([id]) => id);
+    langkah('Pemeriksaan', !error.length, `${hitung.OK} OK · ${hitung.Peringatan} Peringatan · ${hitung.Masalah} Masalah${error.length ? ` · cek error: ${error.join(', ')}` : ''}`);
+    catatan.hitung = hitung;
+    try {
+      await exec(process.execPath, ['bangun.mjs', '--ke-vault'], { cwd: DIR, timeout: 60000, windowsHide: true });
+      langkah('Laporan md/xlsx diperbarui', true, 'DRAFT\\Audit Management Checker\\Laporan-Audit-Teknis-YSPI.md / .xlsx');
+    } catch (e) { langkah('Laporan md/xlsx diperbarui', false, (e.stderr || e.message).slice(0, 400)); }
+    if (catatan.hasil !== 'GAGAL') catatan.hasil = hitung.Masalah ? 'ADA MASALAH' : hitung.Peringatan ? 'PERINGATAN' : 'OK';
   } catch (e) { catatan.hasil = 'GAGAL'; langkah('Galat', false, e.message); }
 
-  const r = bacaRiwayat(); r.unshift(catatan); tulisJson(RIWAYAT, { riwayat: r.slice(0, 100) });
+  const r = bacaRiwayat().filter((x) => !(x.sedang && x.waktu === catatan.waktu));
+  r.unshift(catatan); tulisJson(RIWAYAT, { riwayat: r.slice(0, 200) });
   log(pemicu, catatan.hasil, catatan.push);
   if (mulaiUlang) { log('kode server berubah — keluar agar penjaga menyalakan ulang'); setTimeout(() => process.exit(0), 1500); }
 }
@@ -185,7 +186,7 @@ export async function jalankan(pemicu) {
 
 async function putarKode() {
   const t = await tandaKode();
-  if (!t) { st.kode.calon = null; return; }
+  if (!t || fs.existsSync(JEDA)) { st.kode.calon = null; return; }
   if (t === st.kode.gagal) return;            // isi sama dengan yang sudah gagal; tunggu suntingan berikutnya
   if (t !== st.kode.calon) { st.kode.calon = t; return; } // tunggu stabil satu putaran
   st.kode.calon = null;
@@ -207,5 +208,6 @@ export function mulai() {
   setInterval(aman(putarKode), 60_000);
   aman(putarWiki)();
   setInterval(aman(putarWiki), 5 * 60_000);
-  log('pemantau aktif: kode tiap 1 menit, wiki tiap 5 menit');
+  setInterval(() => jalankan('terjadwal (tiap jam)'), 60 * 60_000);
+  log('pemantau aktif: kode tiap 1 menit, wiki tiap 5 menit, audit penuh tiap jam');
 }
