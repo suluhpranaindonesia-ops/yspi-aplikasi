@@ -157,6 +157,14 @@ for item in ubah.get('topik', []):
     sheet.cell(r, TOPIK).value = item['topik']
     catatan_perubahan.append(f"{kode}: Topik diisi {item['topik']}")
 
+# riwayat (opsional, dikirim kelola-tracker.mjs): catat putaran ini sebagai satu
+# baris di sheet "Riwayat Agen", dalam simpanan yang sama dengan perubahannya.
+if ubah.get('riwayat'):
+    import riwayat_agen
+    rw = ubah['riwayat']
+    riwayat_agen.tambah(book, rw.get('proses', 'kelola-tracker'), rw.get('mode', ''),
+                        rw.get('hasil', 'tracker diubah'), rw.get('ringkasan', ''), '\n'.join(catatan_perubahan))
+
 book.save(buku_jalur)
 book.close()
 

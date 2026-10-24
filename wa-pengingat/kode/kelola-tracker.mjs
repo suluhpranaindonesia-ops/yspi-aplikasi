@@ -346,10 +346,12 @@ export function tulisPapanTopik(items, daftarTopik, now) {
 export function tulisPerubahan(perubahan, sha256Awal) {
   if (hashTracker() !== sha256Awal) throw Error('Tracker berubah sejak dibaca; batal menulis. Akan dicoba lagi run berikutnya.');
   fs.mkdirSync(KERJA, {recursive:true});
-  const cap = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
-  const cadangan = path.join(KERJA, `cadangan-drive-${cap}.xlsx`);
+  // Nama tetap, ditimpa tiap tulisan (24 Okt 2026): dulu berstempel waktu dan
+  // menumpuk dua berkas per tulisan. Riwayat perubahannya kini baris di sheet
+  // "Riwayat Agen" (lihat riwayat_agen.py); cadangan cukup satu, sebelum tulisan terakhir.
+  const cadangan = path.join(KERJA, 'cadangan-drive-terakhir.xlsx');
   fs.copyFileSync(TRACKER, cadangan);
-  const berkasUbah = path.join(KERJA, `perubahan-drive-${cap}.json`);
+  const berkasUbah = path.join(KERJA, 'perubahan-drive-terakhir.json');
   fs.writeFileSync(berkasUbah, JSON.stringify(perubahan, null, 2));
   const hasil = JSON.parse(execFileSync(PYTHON, [path.join(DIR,'tulis-tracker.py'), TRACKER, berkasUbah], {encoding:'utf8', timeout:120000, windowsHide:true}));
   return {...hasil, cadangan};
@@ -483,6 +485,8 @@ export async function run() {
     if (!adaPerubahan) {
       log('Tidak ada perubahan tracker hari ini.');
     } else {
+      perubahan.riwayat = {proses:'kelola-tracker', hasil:'tracker diubah',
+        ringkasan:`${rencana.tutup.length} #close, ${rencana.buka.length} #reopen, ${rencana.baru.length} #log baru, ${rencana.kabar.length} kabar, ${tutupOtomatis.length} auto-close, ${isiTanggalKandidat.length} tanggal kandidat diisi`};
       const hasil = tulisPerubahan(perubahan, snapshot.sha256);
       log(`Tracker ditulis. sha sebelum=${hasil.sha256_sebelum.slice(0,12)} sesudah=${hasil.sha256_sesudah.slice(0,12)} (${hasil.berubah?'berubah':'TIDAK berubah'}). Cadangan: ${path.basename(hasil.cadangan)}.`);
       for (const p of hasil.perubahan) log(`  ${p}`);

@@ -609,11 +609,16 @@ export async function run() {
       log(`Membaca obrolan grup ${dateWIB(new Date(dari))} s.d. ${dateWIB(new Date(sampai-1))}: ${pesan.length} pesan orang, tanpa batas jumlah.`);
     }
     const output=path.join(BRIDGE,'pengingat');fs.mkdirSync(output,{recursive:true});
-    const stem=`pesan-${date}-${sesi}${uji?'-uji-'+mode:''}${keDaniel?'-daniel':''}`;
-    fs.writeFileSync(path.join(output,`bahan-${date}-${sesi}.json`),JSON.stringify({...snapshot,mode,pesan},null,2));
+    // Nama tetap, ditimpa tiap run (24 Okt 2026): dulu berstempel tanggal dan
+    // menumpuk 4 berkas per hari. Riwayat per run kini satu baris di sheet
+    // "Riwayat Agen" tracker (catatRiwayat); berkas di sini hanya run terakhir.
+    const stem=`terakhir${uji?'-uji-'+mode:''}${keDaniel?'-daniel':''}`;
+    fs.writeFileSync(path.join(output,`bahan-${stem}.json`),JSON.stringify({...snapshot,mode,pesan},null,2));
     let result;
     if(process.argv.includes('--pakai-uji')) {
-      const audit=JSON.parse(fs.readFileSync(path.join(output,`pesan-${date}-${sesi}-uji-${mode}.audit.json`),'utf8'));
+      const audit=JSON.parse(fs.readFileSync(path.join(output,`terakhir-uji-${mode}.audit.json`),'utf8'));
+      // Nama berkas tidak lagi bertanggal, jadi tanggalnya diperiksa di sini.
+      if(dateWIB(new Date(audit.generatedAt))!==date)throw Error('Hasil uji bukan dari hari ini.');
       if(audit.sha256Before!==snapshot.sha256 || audit.sha256After!==snapshot.sha256 || audit.mode!==mode || audit.metrics?.done_reason!=='stop' || audit.metrics?.model!==config.model)throw Error('Hasil uji tidak cocok dengan tracker/model saat ini.');
       if(['perorang','pertopik'].includes(mode)) {
         const kabar=audit.kabar||{};
@@ -641,7 +646,9 @@ export async function run() {
         const coba=await mintaModelKirim({model:config.model||'qwen3:8b',text:result.text,tujuan,log});
         log(`Uji alat: model memanggil kirim_whatsapp ke ${coba.argumen.tujuan}, tetapi mode uji tidak mengantrikan apa pun.`);
       }
-      log('Mode uji/kirim nonaktif: tidak dikirim.');return;
+      log('Mode uji/kirim nonaktif: tidak dikirim.');
+      if(!uji)catatRiwayat({mode,hasil:'kirim nonaktif',ringkasan:`${snapshot.items.filter(i=>i.status!=='Closed').length} item aktif; ${result.text.length} karakter`,rincian:result.text},log);
+      return;
     }
     const status=fs.readFileSync(path.join(BRIDGE,'status.md'),'utf8');
     if(!/keadaan: \*\*tersambung\*\*/.test(status))throw Error('WhatsApp belum tersambung; hasil disimpan, belum diantrikan.');
@@ -651,8 +658,23 @@ export async function run() {
     const kirim=await mintaModelKirim({model:config.model||'qwen3:8b',text:result.text,tujuan,log});
     const queueKey=prior?key+'-'+Date.now():key;
     fs.writeFileSync(path.join(dirs[0],queueKey+'.json'),JSON.stringify({to:tujuan,text:result.text},null,2),{flag:'wx'});
-    fs.writeFileSync(path.join(output,stem+'.kirim.json'),JSON.stringify({alat:'kirim_whatsapp',...kirim,berkas:queueKey+'.json',waktu:new Date().toISOString()},null,2));
     log(`DIANTRIKAN ${queueKey}.json → ${namaTujuan} ${tujuan} atas panggilan alat oleh model; menunggu bukti outbox, belum mengklaim terkirim.`);
-  } catch(error) {log(`GAGAL: ${error.message}`);throw error;}
+    // Pengganti berkas .kirim.json harian: bukti panggilan alat jadi satu baris.
+    catatRiwayat({mode,hasil:`diantrikan → ${namaTujuan}`,ringkasan:`${snapshot.items.filter(i=>i.status!=='Closed').length} item aktif; ${result.text.length} karakter; antrean ${queueKey}.json; alat ${JSON.stringify(kirim.argumen||{}).slice(0,200)}`,rincian:result.text},log);
+  } catch(error) {
+    log(`GAGAL: ${error.message}`);
+    if(!uji)catatRiwayat({mode,hasil:'GAGAL',ringkasan:error.message},log);
+    throw error;
+  }
   finally {unlock();}
+}
+
+// Satu baris di sheet "Riwayat Agen" tracker (riwayat_agen.py). Ditulis
+// SETELAH hash tracker diperiksa, jadi tidak mengganggu penjaga "tracker
+// berubah selama run". Run --uji tidak mencatat: --pakai-uji butuh hash tracker
+// yang sama persis dengan saat uji. Gagal mencatat tidak membatalkan kiriman.
+export function catatRiwayat(data,log=()=>{}) {
+  try {
+    execFileSync(PYTHON,[path.join(DIR,'riwayat_agen.py'),TRACKER],{input:JSON.stringify({proses:'laporan pagi',...data}),encoding:'utf8',timeout:120000,windowsHide:true});
+  } catch(error) {log(`Catatan Riwayat Agen GAGAL (kiriman tidak terpengaruh): ${String(error.stderr||error.message).trim().split('\n').pop()}`);}
 }
