@@ -74,7 +74,7 @@ function totalKegiatan(k) {
   return tot * put;
 }
 
-export function kumpul(file = WORKBOOK) {
+export function kumpul(file = WORKBOOK, today = hariIniWIB()) {
   const wb = bacaWorkbook(file);
   const jr = wb.sheet('Jadwal Rutin');
   const pemilik = {};
@@ -94,26 +94,10 @@ export function kumpul(file = WORKBOOK) {
       pemilik: pemilik[kode] || '-',
     });
   }
-  // Arahan pengurus yang menimpa baris workbook (tambahan.json → ganti): nama/nominal baru,
-  // tanggal jatuh tempo di bulan yang sama, atau baris dihapus (diganti kewajiban mingguan).
-  // Nomor voucher lama tidak diwariskan bila nominalnya diganti.
   const tb = bacaTambahan();
-  for (const g of tb.ganti || []) {
-    for (let i = rutin.length - 1; i >= 0; i--) {
-      const x = rutin[i];
-      if (x.kode !== g.kode || SELESAI.includes(x.status)) continue;
-      if (g.hapus) { rutin.splice(i, 1); continue; }
-      if (g.tanggal && x.due) {
-        const [y, m] = x.due.split('-').map(Number);
-        x.due = `${y}-${String(m).padStart(2, '0')}-${String(Math.min(g.tanggal, new Date(Date.UTC(y, m, 0)).getUTCDate())).padStart(2, '0')}`;
-        x.voucher = mundurHariKerja(x.due, 3);
-      }
-      if (g.nama) x.nama = g.nama;
-      if (g.nominal && g.nominal !== x.nominal) { x.diganti = `${rp(x.nominal)} di workbook`; x.nominal = g.nominal; x.noVoucher = ''; x.status = 'Belum diajukan'; }
-    }
-  }
-  // Kewajiban yang belum masuk workbook (tambahan.json): bulanan (tanggal), mingguan
-  // (hariMinggu 0=Minggu…6=Sabtu), atau sekali (tanggal di bulan "mulai").
+  terapkanArahan(rutin, tb);
+  // Kewajiban yang belum masuk workbook (tambahan.json): bulanan (tanggal; "setiapBulan" n untuk
+  // tiap n bulan), mingguan (hariMinggu 0=Minggu…6=Sabtu), atau sekali (tanggal di bulan "mulai").
   for (const t of tb.kewajiban) {
     const isi = { kode: t.kode, nama: t.nama, nominal: t.nominal, status: 'Belum diajukan', noVoucher: '', pemilik: t.pemilik || '-',
       tambahan: true, irama: t.irama, akun: t.akun, nominalMaks: !!t.nominalMaks, hariPengingat: t.hariPengingat, catatan: t.catatan };
@@ -130,10 +114,17 @@ export function kumpul(file = WORKBOOK) {
       const due = `${y}-${String(m).padStart(2, '0')}-${String(Math.min(t.tanggal, hariAkhir)).padStart(2, '0')}`;
       rutin.push({ ...isi, due, voucher: mundurHariKerja(due, 3) });
       if (t.irama !== 'bulanan') break;
-      if (++m > 12) { m = 1; y++; }
+      m += t.setiapBulan || 1;
+      while (m > 12) { m -= 12; y++; }
     }
   }
   cocokkanRegister(rutin);
+  // Arahan Daniel 20 Okt 2026: kas kecil mingguan yang minggunya lewat tanpa voucher berarti
+  // memang tidak perlu diisi — dibuang, bukan ditumpuk sebagai "lewat jatuh tempo".
+  for (let i = rutin.length - 1; i >= 0; i--) {
+    const x = rutin[i];
+    if (x.irama === 'mingguan' && x.due < today && !sudahAdaVoucher(x)) rutin.splice(i, 1);
+  }
   const keg = wb.names.filter(n => /^K\d+\b/.test(n)).map(n => {
     const k = wb.sheet(n);
     return {
@@ -172,6 +163,39 @@ function cocokkanRegister(rutin) {
     const c = daftar.find((d) => !terpakai.has(d.no) && d.tgl && cocok(d, x));
     if (c) { terpakai.add(c.no); x.noVoucher = c.no; x.status = `Voucher ${c.status} (register)`; }
   }
+}
+
+// Arahan pengurus yang menimpa baris workbook. Dipakai juga oleh dasbor keuangan-web (tabel
+// "Jatuh tempo pembayaran rutin") supaya keduanya sama. Baris: { kode, due, voucher, nama,
+// nominal, status, noVoucher }.
+//  - ganti: nama/nominal baru, tanggal jatuh tempo di bulan yang sama, atau baris dihapus
+//    (diganti kewajiban mingguan). Nomor voucher lama tidak diwariskan bila nominalnya diganti.
+//  - tutup: periode (YYYY-MM) yang sudah dibayar → status Selesai dengan voucher yang benar
+//    (mis. workbook menulis voucher yang salah, atau nominal voucher beda dari jadwal).
+export function terapkanArahan(rutin, tb = bacaTambahan()) {
+  for (const g of tb.ganti || []) {
+    for (let i = rutin.length - 1; i >= 0; i--) {
+      const x = rutin[i];
+      if (x.kode !== g.kode || SELESAI.includes(x.status)) continue;
+      if (g.hapus) { rutin.splice(i, 1); continue; }
+      if (g.tanggal && x.due) {
+        const [y, m] = x.due.split('-').map(Number);
+        x.due = `${y}-${String(m).padStart(2, '0')}-${String(Math.min(g.tanggal, new Date(Date.UTC(y, m, 0)).getUTCDate())).padStart(2, '0')}`;
+        x.voucher = mundurHariKerja(x.due, 3);
+      }
+      if (g.nama) x.nama = g.nama;
+      if (g.nominal && g.nominal !== x.nominal) { x.diganti = `${rp(x.nominal)} di workbook`; x.nominal = g.nominal; x.noVoucher = ''; x.status = 'Belum diajukan'; }
+    }
+  }
+  for (const t of tb.tutup || []) {
+    for (const x of rutin) {
+      // R06 (dana LBC) tidak bertanggal di workbook ("saat dana masuk"): pakai kolom periode.
+      if (x.kode !== t.kode || (x.due || x.periode || '').slice(0, 7) !== t.periode) continue;
+      x.noVoucher = t.noVoucher || ''; x.status = 'Selesai';
+      if (t.nominal) x.nominal = t.nominal;
+    }
+  }
+  return rutin;
 }
 
 export function bacaTambahan() {
@@ -277,7 +301,7 @@ async function utama() {
 
   const hash = () => crypto.createHash('sha256').update(fs.readFileSync(WORKBOOK)).digest('hex');
   const sebelum = hash();
-  const data = kumpul();
+  const data = kumpul(WORKBOOK, today);
   log(`Membaca Excel jadwal: ${data.rutin.length} baris pembayaran rutin, ${data.keg.length} lembar kegiatan; tanggal ${today}.`);
   const text = susunPesan(data, today, argv.includes('--ringkasan'));
   if (hash() !== sebelum) throw Error('Workbook berubah selama dibaca; tidak dikirim, coba lagi di putaran berikutnya.');
