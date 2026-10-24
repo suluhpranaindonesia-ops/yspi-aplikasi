@@ -501,11 +501,16 @@ export async function weekend(model,items,mode,now,log) {
   const wiki=wikiSource(mode,now);
   const db=new DatabaseSync(DB,{readOnly:true});
   let example;
-  try {example=db.prepare('SELECT id,ts,teks FROM pesan WHERE jid=? AND teks LIKE ? ORDER BY ts DESC LIMIT 1').get('<id-grup-yspi>@g.us',mode==='syukur'?'🙏 Syukur%':'🌿 Hari Istirahat%');}
+  try {example=db.prepare('SELECT id,ts,teks,dariSaya FROM pesan WHERE jid=? AND teks LIKE ? ORDER BY ts DESC LIMIT 1').get('<id-grup-yspi>@g.us',mode==='syukur'?'🙏 Syukur%':'🌿 Hari Istirahat%');}
   finally{db.close();}
   // The full latest Saturday/Sunday group message preserves the actual structure
   // used by the Mac agent. Only same-day content may corroborate current facts.
-  const exampleIsToday=example && dateWIB(new Date(example.ts))===dateWIB(now);
+  // Kirim ulang (--paksa) di hari yang sama: pesan terakhir itu kiriman bot ini
+  // sendiri, bukan laporan grup. Dulu ia dianggap sumber hari ini, lalu penjaga
+  // jiplakan menolak tiap tulisan yang mirip kiriman sendiri (24 Okt 2026, 3x
+  // ditolak). Dalam kasus itu ia hanya contoh format.
+  const kirimanSendiriUlang=process.argv.includes('--paksa') && example?.dariSaya===1;
+  const exampleIsToday=example && dateWIB(new Date(example.ts))===dateWIB(now) && !kirimanSendiriUlang;
   const isSaturday=mode==='syukur';
   const data={tanggal:dateLong(now),tracker:recentEntries(items,now),wiki,
     ayat:isSaturday?verifiedVerse():null,
