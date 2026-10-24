@@ -221,7 +221,8 @@ export function bacaTopikMd() {
   const teks = fs.readFileSync(TOPIK_MD, 'utf8');
   const daftar = [];
   for (const line of teks.split('\n')) {
-    const m = line.match(/^\|\s*`([^`]+)`\s*\|([^|]+)\|([^|]*)\|([^|]*)\|([^|]*)\|?\s*$/);
+    // Kolom ke-6 dst. (pemetaan kode untuk /control v2) diabaikan; tabel 5 kolom tetap terbaca sama.
+    const m = line.match(/^\|\s*`([^`]+)`\s*\|([^|]+)\|([^|]*)\|([^|]*)\|([^|]*)(?:\|[^|]*)*\|?\s*$/);
     if (m) daftar.push({kunci: m[1].trim(), nama: clean(m[2]), wiki: clean(m[4]), status: clean(m[5])});
   }
   return {teks, daftar};
@@ -286,12 +287,15 @@ export async function topikUntukBatch(model, kandidat, daftar, log) {
   return hasil;
 }
 
-function baruDiTopikMd(teksLama, kunci, nama, tanggal) {
-  const baris = `| \`${kunci}\` | ${nama} | auto (#log ${tanggal}) | *(belum ada — gap)* | 🆕 auto ${tanggal} — perlu konfirmasi |`;
+export function baruDiTopikMd(teksLama, kunci, nama, tanggal) {
   const baris_ = teksLama.split('\n');
   let idx = baris_.length - 1;
   while (idx>=0 && !baris_[idx].trim().startsWith('|')) idx--;
-  baris_.splice(idx+1, 0, baris);
+  // ikut jumlah kolom baris tabel terakhir (5 dulu, 8 sejak pemetaan kode /control v2); sel kanan dibiarkan kosong
+  const kolom = idx>=0 ? baris_[idx].trim().replace(/^\||\|$/g, '').split('|').length : 5;
+  const sel = [`\`${kunci}\``, nama, `auto (#log ${tanggal})`, '*(belum ada — gap)*', `🆕 auto ${tanggal} — perlu konfirmasi`];
+  while (sel.length < kolom) sel.push('');
+  baris_.splice(idx+1, 0, `| ${sel.join(' | ')} |`);
   return baris_.join('\n');
 }
 
