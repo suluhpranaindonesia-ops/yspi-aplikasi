@@ -1,0 +1,28 @@
+rules_version = '2';
+
+// Aturan keamanan Firebase Storage — Pendataan Guru YSPI (mode foto 'storage').
+// ⚠️ USULAN — review sebelum deploy. Lihat CARA PASANG di firestore.rules.
+//
+// Foto guru diunggah form publik ke foto-guru/<tahun>/<id>.jpg (lihat js/form.js).
+// Publik hanya boleh MENGUNGGAH berkas gambar berukuran wajar; hanya admin yang boleh MEMBACA
+// (foto bisa memperlihatkan wajah/identitas — bukan untuk publik).
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    match /foto-guru/{tahun}/{berkas} {
+      allow create: if request.resource.size < 3 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      allow read: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    match /{semua=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,79 @@
+rules_version = '2';
+
+// Aturan keamanan Firestore — Pendataan Guru YSPI.
+//
+// ⚠️ USULAN — review sebelum deploy. Deploy akan DITOLAK membaca data guru oleh admin
+//    sampai setiap akun pengurus diberi custom claim { admin: true } (lihat CARA PASANG di bawah),
+//    jadi pasang claim-nya LEBIH DULU, baru deploy aturan ini.
+//
+// Model:
+//  - Koleksi `guru` & `foto_guru` berisi PII + REKENING BANK. Hanya admin yang boleh membaca.
+//  - Form publik (tanpa login) hanya boleh MEMBUAT dokumen baru, dengan validasi; tidak boleh
+//    membaca, me-list, mengubah, atau menghapus dokumen mana pun.
+//  - "admin" = pengguna Firebase Auth dengan custom claim admin==true — BUKAN sekadar "sudah login".
+//    Ini penting: bila Email/Password signup tidak dimatikan, siapa pun bisa mendaftar sendiri dan
+//    menjadi request.auth != null. Mengikat ke claim menutup jalur itu.
+//    (Tetap SANGAT disarankan mematikan signup publik di Firebase Console → Authentication.)
+
+function isAdmin() {
+  return request.auth != null && request.auth.token.admin == true;
+}
+
+// Dokumen guru baru dari form publik: timestamp wajib dari server, pernyataan wajib true,
+// nama wajib terisi & wajar, jumlah field dibatasi. Tidak mengunci skema persis supaya form
+// tetap bisa menambah field baru, tapi mencegah penyuntikan created_at palsu & dokumen raksasa.
+function guruBaruSah() {
+  return request.resource.data.created_at == request.time
+      && request.resource.data.pernyataan == true
+      && request.resource.data.nama is string
+      && request.resource.data.nama.size() > 0
+      && request.resource.data.nama.size() < 200
+      && request.resource.data.size() <= 60;
+}
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /guru/{id} {
+      allow create: if guruBaruSah();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Foto tersimpan di Firestore (mode 'firestore'): satu dokumen base64 per guru.
+    match /foto_guru/{id} {
+      allow create: if request.resource.data.created_at == request.time
+                    && request.resource.data.data is string
+                    && request.resource.data.data.size() < 1200000; // < ~1,2 MB (batas dok Firestore 1 MB tetap berlaku)
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Segala koleksi lain: tolak total.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// ============================================================
+// CARA PASANG
+// ------------------------------------------------------------
+// 1) Beri claim admin ke tiap pengurus (sekali per akun), via Cloud Shell / mesin dengan
+//    Firebase Admin SDK:
+//
+//      const admin = require('firebase-admin');
+//      admin.initializeApp();
+//      admin.auth().getUserByEmail('pengurus@contoh.com')
+//        .then(u => admin.auth().setCustomUserClaims(u.uid, { admin: true }));
+//
+//    Pengguna harus login ulang (atau token-nya menyegar) agar claim berlaku.
+//
+// 2) Matikan pendaftaran mandiri: Firebase Console → Authentication → Settings →
+//    nonaktifkan "Enable create (sign-up)" bila tersedia, atau aktifkan proteksi enumerasi email.
+//
+// 3) Deploy aturan (hosting tetap di Vercel — ini hanya aturan database):
+//      firebase deploy --only firestore:rules,storage
+//    atau tempel isi berkas ini di Firebase Console → Firestore → Rules.
+//
+// 4) Verifikasi: login sebagai pengurus → dashboard admin tetap bisa melihat daftar guru;
+//    buka REST/console tanpa claim → baca ditolak; form publik tetap bisa mengirim data.
+// ============================================================

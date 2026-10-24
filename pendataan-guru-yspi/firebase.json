@@ -1,0 +1,5 @@
+{
+  "comment": "Hosting situs tetap di Vercel. Berkas ini HANYA untuk men-deploy aturan keamanan Firestore & Storage dengan: firebase deploy --only firestore:rules,storage",
+  "firestore": { "rules": "firestore.rules" },
+  "storage": { "rules": "storage.rules" }
+}
