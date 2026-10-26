@@ -3,6 +3,7 @@ import {createClient} from '@supabase/supabase-js';
 import {z} from 'zod';
 import {reportSchema} from './report';
 import {missingFields} from './report-rules';
+import {bacaPusatTes} from './pusat-tes';
 export const supabaseEnabled=()=> supabaseEnvironment().YSPI_AUTH_MODE==='supabase';
 const json=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 const idSchema=z.string().regex(/^[a-zA-Z0-9_-]{1,150}$/);
@@ -22,6 +23,8 @@ export async function supabaseApi(req:Request){try{
  fail(memberError);if(!member)return json({error:'Akun ini belum mendapat akses pengurus.'},403);
  const [section,id]=new URL(req.url).pathname.slice(5).split('/');
  if(section==='auth'&&id==='me'&&req.method==='GET')return json({email:user.email,role:member.role});
+ // Pretest/postest guru (hanya baca) dari Pusat Tes YSPI, setelah keanggotaan pengurus diperiksa di atas.
+ if(section==='tes'&&req.method==='GET'){try{return json(await bacaPusatTes())}catch{return json({aktif:false,alasan:'Pusat Tes belum bisa dihubungi.'})}}
  if(section==='growth'&&req.method==='GET'){
   if(id){
    const {data,error}=await db.from('yspi_growth_events').select('id,kind,payload,created_at').eq('plan_id',idSchema.parse(id)).order('created_at',{ascending:false}).limit(100);
