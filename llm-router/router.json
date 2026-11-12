@@ -37,6 +37,7 @@
     "ht.pendamping-tugas": { "tingkat": "sedang", "cocok": "Anda agen pendamping tugas Pembinaan Hamba Tuhan" },
     "ht.ringkas-pembimbing": { "tingkat": "sedang", "cocok": "Ringkas percakapan seorang hamba Tuhan" },
     "ht.analisis-tes": { "tingkat": "sedang", "cocok": "Anda menganalisis hasil pretest dan postest" },
+    "tes.ekstrak-soal": { "tingkat": "sedang", "cocok": "Anda mengekstrak soal pretest/postest" },
 
     "keuangan.urai-bon": { "tingkat": "ringan", "cocok": "Kamu mengurai laporan kas kecil" },
     "keuangan.kategori": { "tingkat": "ringan", "cocok": "Pilih kategori kas kecil" },

@@ -12,7 +12,7 @@
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { daftar, satu, ringkasan, ubah, ALAT, jalankanAlat, semua } from './inti.mjs';
+import { hapus, daftar, satu, ringkasan, ubah, ALAT, jalankanAlat, semua } from './inti.mjs';
 import { sensor } from '../supabase-baca.mjs';
 
 const PORT = Number(process.env.PINTU_LAPORAN_PORT || 3468);
@@ -51,6 +51,12 @@ export const server = http.createServer(async (req, res) => {
     if (req.method === 'PATCH' && bagian[0] === 'laporan' && bagian.length === 2) {
       const b = await bacaJson(req);
       const h = await ubah(bagian[1], b.perubahan, { oleh: b.oleh, alasan: b.alasan });
+      ubahan++;
+      return kirim(res, 200, h);
+    }
+    if (req.method === 'DELETE' && bagian[0] === 'laporan' && bagian.length === 2) {
+      const b = await bacaJson(req);
+      const h = await hapus(bagian[1], { oleh: b.oleh, alasan: b.alasan });
       ubahan++;
       return kirim(res, 200, h);
     }

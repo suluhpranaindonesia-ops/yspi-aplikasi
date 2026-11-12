@@ -42,9 +42,14 @@ function mundurHariKerja(d, n) { while (n > 0) { d = geser(d, -1); const w = har
 
 // --- nilai sel: pakai nilai tersimpan; kalau kosong, hitung rumus yang dipakai
 //     pengingat (sama dengan _eval_cadangan versi Python) ---
+// 9 Nov 2026: workbook disimpan tanpa dihitung ulang — SEMUA sel rumus tersimpan bernilai 0
+// (nominal R01–R06, total K01–K11), sehingga pesan menulis "Rp0". Sel rumus yang tersimpan 0
+// dianggap belum dihitung dan dihitung sendiri; nilai tersimpan lain tetap dipercaya.
+const belumDihitung = (c) => !!c.f && (c.v === 0 || c.v === null || c.v === undefined);
+
 function nilaiJadwalRutin(jr, ref, dalam = 0) {
   const c = jr.cell(ref);
-  if (c.v !== null && c.v !== undefined) return c.v;
+  if (c.v !== null && c.v !== undefined && !belumDihitung(c)) return c.v;
   if (!c.f || dalam > 5) return null;
   const refs = [...c.f.matchAll(/\$?([A-Z])\$?(\d+)/g)].map(m => Number(nilaiJadwalRutin(jr, m[1] + m[2], dalam + 1)) || 0);
   if (c.f.includes('*') && refs.length === 2) return refs[0] * refs[1];
@@ -52,7 +57,7 @@ function nilaiJadwalRutin(jr, ref, dalam = 0) {
 }
 function nominalRutin(wb, pr, r) {
   const c = pr.cell('G' + r);
-  if (typeof c.v === 'number') return c.v;
+  if (typeof c.v === 'number' && !belumDihitung(c)) return c.v;
   if (!c.f) return c.v;
   const jr = wb.sheet('Jadwal Rutin');
   const ref = c.f.match(/'Jadwal Rutin'!\$([A-Z])\$(\d+)\s*$/);
@@ -67,7 +72,7 @@ function nominalRutin(wb, pr, r) {
 }
 function totalKegiatan(k) {
   const c = k.cell('G36');
-  if (typeof c.v === 'number') return c.v;
+  if (typeof c.v === 'number' && !belumDihitung(c)) return c.v;
   let tot = 0;
   for (let r = 20; r < 35; r++) { const d = k.cell('D' + r).v, f = k.cell('F' + r).v; if (typeof d === 'number' && typeof f === 'number') tot += d * f; }
   const put = typeof k.cell('B11').v === 'number' ? k.cell('B11').v : 1;
@@ -118,6 +123,7 @@ export function kumpul(file = WORKBOOK, today = hariIniWIB()) {
       while (m > 12) { m -= 12; y++; }
     }
   }
+  terapkanTutup(rutin, tb); // juga untuk baris tambahan.json (R05 Okt, T01, …)
   cocokkanRegister(rutin);
   // Arahan Daniel 20 Okt 2026: kas kecil mingguan yang minggunya lewat tanpa voucher berarti
   // memang tidak perlu diisi — dibuang, bukan ditumpuk sebagai "lewat jatuh tempo".
@@ -187,12 +193,26 @@ export function terapkanArahan(rutin, tb = bacaTambahan()) {
       if (g.nominal && g.nominal !== x.nominal) { x.diganti = `${rp(x.nominal)} di workbook`; x.nominal = g.nominal; x.noVoucher = ''; x.status = 'Belum diajukan'; }
     }
   }
+  return terapkanTutup(rutin, tb);
+}
+
+// "tutup" dipisah supaya bisa dijalankan lagi SETELAH kewajiban tambahan.json masuk (9 Nov 2026:
+// R05 Okt & T01 Okt sudah dibayar tapi tetap "lewat jatuh tempo" karena tutup hanya mengenai
+// baris workbook). Satu voucher hanya milik satu baris: bila workbook menempelkan voucher yang
+// sama di periode lain dari kode yang sama (VCH-0037 R05 Okt tertulis di baris R05 Nov), baris
+// lain itu dilepas lagi jadi "Belum diajukan".
+export function terapkanTutup(rutin, tb = bacaTambahan()) {
   for (const t of tb.tutup || []) {
+    const vch = (t.noVoucher || '').match(/VCH-\d{4}-\d{4}/g) || [];
     for (const x of rutin) {
+      if (x.kode !== t.kode) continue;
       // R06 (dana LBC) tidak bertanggal di workbook ("saat dana masuk"): pakai kolom periode.
-      if (x.kode !== t.kode || (x.due || x.periode || '').slice(0, 7) !== t.periode) continue;
-      x.noVoucher = t.noVoucher || ''; x.status = 'Selesai';
-      if (t.nominal) x.nominal = t.nominal;
+      if ((x.due || x.periode || '').slice(0, 7) === t.periode) {
+        x.noVoucher = t.noVoucher || ''; x.status = 'Selesai';
+        if (t.nominal) x.nominal = t.nominal;
+      } else if (vch.length && vch.some((v) => (x.noVoucher || '').includes(v))) {
+        x.noVoucher = ''; x.status = 'Belum diajukan'; x.dilepas = `voucher milik periode ${t.periode}`;
+      }
     }
   }
   return rutin;

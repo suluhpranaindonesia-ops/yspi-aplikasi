@@ -18,7 +18,10 @@ import { ambilSemua, bukaKunci, sensor } from '../supabase-baca.mjs';
 const AKAR = path.dirname(fileURLToPath(import.meta.url));
 const DATA = path.join(AKAR, '..', 'data');
 export const LOG_UBAH = process.env.PINTU_LOG_UBAH || path.join(DATA, 'ubah-laporan.jsonl');
+export const LOG_HAPUS = process.env.PINTU_LOG_HAPUS || path.join(DATA, 'hapus-laporan.jsonl');
 
+// Bantuan YSPI ke guru bukan cerita: tampil sebagai keuangan dan tidak ikut hitungan laporan.
+const jenisDari = (r) => (String(r.id || '').startsWith('bantuan-guru-') ? 'keuangan' : r.jenis || 'cerita');
 const STATUS = { review: 'Perlu diperiksa', approved: 'Disetujui' };
 const KENDALA = { open: 'Terbuka', progress: 'Diproses', resolved: 'Selesai' };
 
@@ -31,7 +34,7 @@ export const KOLOM_UBAH = {
 
 export function bentuk(r, media = [], { mentah = false } = {}) {
   const x = {
-    id: r.id, jenis: r.jenis || 'cerita', guru: r.name || '', sekolah: r.school || '', wilayah: r.region || '',
+    id: r.id, jenis: jenisDari(r), guru: r.name || '', sekolah: r.school || '', wilayah: r.region || '',
     tanggal: r.date || '', sesi: r.sessions ?? null, siswa: r.students ?? null,
     kegiatan: r.activity || '', dampak: r.impact || '', kendala: r.challenge || '',
     dana_diterima: r.funds_received ?? null, dana_dipakai: r.funds_used ?? null, catatan_dana: r.funds_note || '',
@@ -62,7 +65,7 @@ export async function daftar(f = {}, opsi = {}) {
   const { mentah: rows, media } = await semua(opsi);
   const batas = Math.min(Math.max(Number(f.batas) || 50, 1), 500);
   let hasil = rows.map((r) => bentuk(r, media.get(r.id), { mentah: !!f.mentah }));
-  if (f.jenis) hasil = hasil.filter((x) => x.jenis === f.jenis);
+  hasil = f.jenis ? hasil.filter((x) => x.jenis === f.jenis) : hasil.filter((x) => x.jenis !== 'keuangan');
   if (f.sekolah) hasil = hasil.filter((x) => kecil(x.sekolah).includes(kecil(f.sekolah)));
   if (f.guru) hasil = hasil.filter((x) => kecil(x.guru).includes(kecil(f.guru)));
   if (f.wilayah) hasil = hasil.filter((x) => kecil(x.wilayah).includes(kecil(f.wilayah)));
@@ -82,7 +85,8 @@ export async function satu(id, { mentah = false, ...opsi } = {}) {
 
 // Angka dihitung program, bukan model: model cukup membaca ringkasan ini.
 export async function ringkasan(opsi = {}) {
-  const { mentah: rows, media } = await semua(opsi);
+  const { mentah: semuaBaris, media } = await semua(opsi);
+  const rows = semuaBaris.filter((r) => jenisDari(r) !== 'keuangan');
   const hitung = (fn) => rows.reduce((m, r) => { const k = fn(r) || '(kosong)'; m[k] = (m[k] || 0) + 1; return m; }, {});
   const jumlahAngka = (k) => rows.reduce((s, r) => s + (Number.isFinite(r[k]) ? r[k] : 0), 0);
   return {
@@ -94,8 +98,8 @@ export async function ringkasan(opsi = {}) {
     per_bulan: hitung((r) => String(r.date || r.created_at || '').slice(0, 7)),
     kendala_terbuka: rows.filter((r) => r.issue_status === 'open').length,
     total_siswa_disebut: jumlahAngka('students'),
-    total_dana_diterima: jumlahAngka('funds_received'),
-    total_dana_dipakai: jumlahAngka('funds_used'),
+    total_dana_diterima: semuaBaris.reduce((s, r) => s + (Number.isFinite(r.funds_received) ? r.funds_received : 0), 0),
+    total_dana_dipakai: semuaBaris.reduce((s, r) => s + (Number.isFinite(r.funds_used) ? r.funds_used : 0), 0),
     laporan_dengan_foto: rows.filter((r) => media.get(r.id)?.length).length,
   };
 }
@@ -129,6 +133,35 @@ async function patch(id, kolom) {
   return r.json();
 }
 
+// Hapus satu laporan atas perintah pengurus (keputusan pengguna 3 Nov 2026). Isi lengkapnya dicatat DULU di
+// data/hapus-laporan.jsonl supaya bisa dipulihkan. Berkas foto di Storage ikut dibersihkan; salinan Drive tidak.
+async function rest(rute, opsi = {}) {
+  const kunci = await bukaKunci();
+  const cfg = JSON.parse(fs.readFileSync(path.join(process.env.LAPORAN_GURU_PENGHUBUNG || 'C:\\Users\\suluh\\Documents\\Codex\\2026-09-14\\co\\outputs\\yspi-supabase', 'state', 'connection.json'), 'utf8'));
+  const r = await fetch(`https://${cfg.project}.supabase.co${rute}`, { redirect: 'error', signal: AbortSignal.timeout(30_000), ...opsi,
+    headers: { apikey: kunci, ...(kunci.startsWith('eyJ') ? { authorization: 'Bearer ' + kunci } : {}), 'content-type': 'application/json', ...(opsi.headers || {}) } });
+  if (!r.ok) throw Error(sensor('Supabase ' + r.status + ': ' + (await r.text()).slice(0, 200)));
+  return r;
+}
+
+export async function hapus(id, { oleh, alasan = '' } = {}) {
+  if (typeof id !== 'string' || !id) throw Error('id laporan wajib');
+  if (typeof oleh !== 'string' || !oleh.trim()) throw Error('"oleh" wajib: nama orang yang memerintahkan');
+  const q = encodeURIComponent(id);
+  const [laporan] = await (await rest(`/rest/v1/yspi_reports?id=eq.${q}&select=*`)).json();
+  if (!laporan) throw Error('Laporan tidak ditemukan');
+  const media = await (await rest(`/rest/v1/yspi_media?report_id=eq.${q}&select=*`)).json();
+  fs.mkdirSync(path.dirname(LOG_HAPUS), { recursive: true });
+  fs.appendFileSync(LOG_HAPUS, JSON.stringify({ waktu: new Date().toISOString(), id, oleh: oleh.trim().slice(0, 100), alasan: String(alasan).slice(0, 500), laporan, media }) + '\n');
+  await rest(`/rest/v1/yspi_media?report_id=eq.${q}`, { method: 'DELETE' });
+  const hilang = await (await rest(`/rest/v1/yspi_reports?id=eq.${q}`, { method: 'DELETE', headers: { Prefer: 'return=representation' } })).json();
+  if (!hilang.length) throw Error('Tidak ada baris yang terhapus');
+  const jalur = media.map((m) => m.path).filter(Boolean);
+  if (jalur.length) await rest('/storage/v1/object/yspi-media', { method: 'DELETE', body: JSON.stringify({ prefixes: jalur }) }).catch(() => {});
+  lupakanCache();
+  return { ok: true, id, foto: jalur.length };
+}
+
 export async function ubah(id, perubahan, { oleh, alasan = '', tulis = patch, ambil } = {}) {
   if (typeof id !== 'string' || !id) throw Error('id laporan wajib');
   if (typeof oleh !== 'string' || !oleh.trim()) throw Error('"oleh" wajib: nama agen/model/orang yang mengubah');
@@ -151,7 +184,7 @@ export async function ubah(id, perubahan, { oleh, alasan = '', tulis = patch, am
 export const ALAT = [
   { name: 'daftar_laporan', description: 'Daftar laporan guru YSPI (cerita kegiatan & jejak belajar), terbaru dulu. Semua filter opsional.',
     inputSchema: { type: 'object', additionalProperties: false, properties: {
-      jenis: { type: 'string', enum: ['cerita', 'jejak'] }, sekolah: { type: 'string' }, guru: { type: 'string' }, wilayah: { type: 'string' },
+      jenis: { type: 'string', enum: ['cerita', 'jejak', 'keuangan'] }, sekolah: { type: 'string' }, guru: { type: 'string' }, wilayah: { type: 'string' },
       status: { type: 'string', enum: ['Perlu diperiksa', 'Disetujui'] }, sejak: { type: 'string', description: 'YYYY-MM-DD' }, sampai: { type: 'string', description: 'YYYY-MM-DD' },
       cari: { type: 'string', description: 'kata dalam kegiatan/dampak/kendala/nama/sekolah' }, batas: { type: 'integer', minimum: 1, maximum: 500 },
       mentah: { type: 'boolean', description: 'sertakan pesan asli WhatsApp' } } } },

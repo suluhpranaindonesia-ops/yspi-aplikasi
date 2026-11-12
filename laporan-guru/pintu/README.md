@@ -28,7 +28,7 @@ menjalankannya, jadi model lokal bisa memakai alat yang sama dengan MCP.
 - Nomor HP guru tidak pernah keluar. Pesan asli WhatsApp hanya bila diminta (`mentah`).
 - Kolom yang boleh diubah: guru, sekolah, wilayah, tanggal, sesi, siswa, kegiatan, dampak,
   kendala, dana_diterima, dana_dipakai, catatan_dana. Status periksa/kendala, sumber, dan
-  menghapus laporan tetap lewat website Pelaporan Guru.
+  menghapus laporan lewat website, atau `DELETE /laporan/<id>` `{"oleh":"..."}` yang dipakai perintah pengurus ke Cila (dua langkah, isi dicatat dulu di `data/hapus-laporan.jsonl`). Alat MCP tidak punya hapus.
 - Laporan yang sudah **Disetujui** admin tidak bisa diubah lewat pintu ini (dicek dua kali:
   sebelum dan saat menulis).
 - `oleh` wajib diisi. Setiap ubahan dicatat dengan nilai sebelum & sesudah di
