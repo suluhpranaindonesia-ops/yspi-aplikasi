@@ -4,6 +4,7 @@ import {z} from 'zod';
 import {reportSchema} from './report';
 import {missingFields} from './report-rules';
 import {bacaPusatTes} from './pusat-tes';
+import {programs} from './program-api';
 export const supabaseEnabled=()=> supabaseEnvironment().YSPI_AUTH_MODE==='supabase';
 const json=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 const idSchema=z.string().regex(/^[a-zA-Z0-9_-]{1,150}$/);
@@ -91,6 +92,8 @@ export async function supabaseApi(req:Request){try{
   const {error}=await db.from('yspi_media').insert({id:mid,report_id:rid,name:file.name.slice(0,200),type:file.type,path});fail(error);
   return json({id:mid});
  }
+ // Program kerja guru (POAC + KPI), migrasi 008. Tidak ada hapus: hanya arsip.
+ if(section==='programs')return await programs(req,db,user.id,user.email||'pengurus');
  // Old bridge-token endpoints are intentionally unavailable in Supabase mode.
  return json({error:'Rute tidak ditemukan.'},404);
  }catch(e){if(e instanceof z.ZodError||e instanceof SyntaxError||(e as Error).message==='INVALID')return json({error:'Format data tidak valid.'},400);console.error('YSPI Supabase request failed');return json({error:'Penyimpanan belum tersedia. Silakan coba lagi.'},503)}
