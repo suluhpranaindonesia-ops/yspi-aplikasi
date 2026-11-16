@@ -192,7 +192,8 @@ export async function ambilAcara(log = () => {}) {
     return { sumber: 'ical', acara };
   }
   alasan.push('kalender.txt belum berisi alamat iCal');
-  throw Error('Tidak ada sumber Google Calendar: ' + alasan.join('; ') + '.');
+  // Belum diatur sama sekali bukan kegagalan: ditandai supaya log tidak menulis GAGAL tiap hari.
+  throw Object.assign(Error('Tidak ada sumber Google Calendar: ' + alasan.join('; ') + '.'), { belumDiatur: true });
 }
 
 // ---------------------------------------------------------------------------

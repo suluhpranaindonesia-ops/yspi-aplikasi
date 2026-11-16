@@ -313,7 +313,7 @@ async function utama() {
   // Sinkron Google Calendar dulu. Kegagalannya TIDAK membatalkan pengingat.
   if (!argv.includes('--tanpa-kalender')) {
     try { await sinkronKalender({ today, uji, argv, config, model, dirs, log }); }
-    catch (e) { log(`Sinkron kalender GAGAL (pengingat tetap lanjut): ${e.message}`); }
+    catch (e) { log(e.belumDiatur ? `Sinkron kalender dilewati, sumber belum diatur (isi kalender.txt atau Apps Script): ${e.message}` : `Sinkron kalender GAGAL (pengingat tetap lanjut): ${e.message}`); }
   }
   const key = `kewajiban-${today}`;
   const sudah = dirs.flatMap(d => fs.existsSync(d) ? fs.readdirSync(d) : []).some(f => f.startsWith(key));
