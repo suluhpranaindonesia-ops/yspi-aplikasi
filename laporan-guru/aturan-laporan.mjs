@@ -1,7 +1,7 @@
 // Kolom wajib laporan guru, dipakai rekap Excel untuk kolom "Kelengkapan".
 //
 // Daftar yang sama ada di penghubung #laporan (yspi-supabase/aturan.mjs, fungsi
-// kekurangan) dan di website (yspi-pelaporan/lib/report-rules.ts). Ubah ketiganya
+// kekurangan) dan di website (yspi-vercel/lib/report-rules.ts). Ubah ketiganya
 // bersamaan. Disalin ke sini supaya repo ini bisa jalan tanpa folder penghubung.
 
 export const WAJIB = [['name', 'nama guru'], ['school', 'sekolah'], ['region', 'wilayah'], ['date', 'tanggal'], ['sessions', 'jumlah sesi'], ['students', 'jumlah siswa'], ['activity', 'kegiatan mengajar']];

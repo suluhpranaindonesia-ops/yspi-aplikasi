@@ -7,10 +7,8 @@
 !/laporan-guru/
 !/pendataan-guru-yspi/
 !/kewajiban/
-!/wa-pengingat/
-!/yspi-pelaporan/
 # yspi-vercel: website pelaporan guru yang AKTIF (Vercel yspi-cerita-pencapaian).
-# yspi-pelaporan di atas = versi Cloudflare, pensiun sejak 9 Okt 2026.
+# yspi-pelaporan (versi Cloudflare, pensiun 9 Okt 2026) dihapus 19 Nov 2026; kodenya ada di riwayat git.
 !/yspi-vercel/
 !/.github/
 # audit-manajemen: kode Audit Management Checker; hasil audit (data/) & keluaran/ tetap lokal
