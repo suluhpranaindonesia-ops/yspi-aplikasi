@@ -1,0 +1,52 @@
+{
+  "catatan": "Router model lokal YSPI. Ubah model per tingkat di sini (atau di http://127.0.0.1:3467). Berlaku langsung tanpa restart. Hanya model Ollama lokal; nama berisi 'cloud' ditolak.",
+  "ollama": "http://127.0.0.1:11434",
+  "tingkat": {
+    "ringan": {
+      "model": "qwen3:8b",
+      "cadangan": "qwen3:8b",
+      "keterangan": "Sarikan pesan jadi JSON, isi kolom, panggil satu alat."
+    },
+    "sedang": {
+      "model": "qwen3.5:9b",
+      "cadangan": "qwen3:8b",
+      "opsi": { "num_gpu": 99 },
+      "keterangan": "Merangkai kalimat atau mengobrol dengan konteks yang dibatasi program. Uji 12 Okt: 9/13, lolos soal ajaran yang gagal di qwen3:8b, ~7 tok/dtk di iGPU."
+    },
+    "berat": {
+      "model": "gemma4:26b",
+      "cadangan": "qwen3.5:9b",
+      "opsi": { "num_gpu": 0 },
+      "keep_alive": "1m",
+      "keterangan": "Menimbang konteks panjang, menulis bebas dengan aturan ketat, atau salahnya berisiko. Uji 12 Okt: paling teliti (tidak mengubah 'ok aja' jadi 'disepakati'). MoE 18 GB, hanya muat di CPU (iGPU kehabisan memori), ~7 tok/dtk tulis tapi baca konteks lambat (~24 tok/dtk); dilepas 1 menit setelah dipakai."
+    }
+  },
+  "tugas": {
+    "laporan-guru.ekstrak-cerita": { "tingkat": "ringan", "cocok": "Anda mengekstrak laporan guru YSPI" },
+    "laporan-guru.ekstrak-jejak": { "tingkat": "ringan", "cocok": "Anda mengekstrak pesan \"jejak belajar\"" },
+    "laporan-guru.tanya-penjaga": { "tingkat": "ringan", "cocok": "Anda penjaga topik." },
+    "laporan-guru.tanya-jawab": { "tingkat": "sedang", "cocok": "Anda agen pendamping guru YSPI" },
+    "laporan-guru.tanya-periksa": { "tingkat": "ringan", "cocok": "Periksa jawaban calon." },
+    "laporan-guru.umpan-balik": { "tingkat": "sedang", "cocok": "Berikan feedback singkat yang suportif" },
+    "laporan-guru.rencana-pencapaian": { "tingkat": "berat", "cocok": "Buat rencana pemula yang realistis" },
+    "laporan-guru.analisis": { "tingkat": "berat", "cocok": "Anda Steward, analis laporan YSPI" },
+
+    "ht.ekstrak-program": { "tingkat": "sedang", "cocok": "Anda mengekstrak program kerja gereja" },
+    "ht.ekstrak-laporan": { "tingkat": "ringan", "cocok": "Anda mengekstrak laporan kegiatan program gereja" },
+    "ht.jawab-ajaran": { "tingkat": "berat", "cocok": "Pertanyaan ini menyangkut ajaran/teologi" },
+    "ht.pendamping-tugas": { "tingkat": "sedang", "cocok": "Anda agen pendamping tugas Pembinaan Hamba Tuhan" },
+    "ht.ringkas-pembimbing": { "tingkat": "sedang", "cocok": "Ringkas percakapan seorang hamba Tuhan" },
+
+    "keuangan.urai-bon": { "tingkat": "ringan", "cocok": "Kamu mengurai laporan kas kecil" },
+    "keuangan.kategori": { "tingkat": "ringan", "cocok": "Pilih kategori kas kecil" },
+    "keuangan.ringkasan": { "tingkat": "sedang", "cocok": "Kamu asisten keuangan Yayasan Suluh Prana Indonesia" },
+
+    "pagi.id-aktif": { "tingkat": "ringan", "cocok": "Baca kolom ID dan Status dari SEMUA baris Excel ini" },
+    "pagi.id-aktif-periksa": { "tingkat": "ringan", "cocok": "Periksa status tiap baris Excel ini" },
+    "pagi.kabar-obrolan": { "tingkat": "berat", "cocok": "Kamu membaca obrolan grup WhatsApp YSPI" },
+    "pagi.pesan-akhir-pekan": { "tingkat": "berat", "cocok": "Tulis SELURUH pesan YSPI dalam bahasa Indonesia" },
+    "pagi.cocok-topik-tracker": { "tingkat": "ringan", "cocok": "Kamu mencocokkan item follow-up YSPI ke daftar Topik" },
+    "kirim-whatsapp": { "tingkat": "ringan", "cocok": "Kamu sudah menulis pesan YSPI di bawah ini" }
+  },
+  "bawaan": "sedang"
+}
